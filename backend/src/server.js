@@ -15,6 +15,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "*").split(",");
 
 const app = express();
 app.use(cors({ origin: allowedOrigins }));
+app.options("*", cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
