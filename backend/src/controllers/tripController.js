@@ -122,7 +122,11 @@ async function submitPriceFeedback(req, res) {
 async function getAvailableTrips(req, res) {
   try {
     const result = await pool.query(
-      `SELECT * FROM trips WHERE status = 'requested' ORDER BY requested_at ASC`
+      `SELECT trips.*, users.name AS caller_name, users.phone AS caller_phone
+       FROM trips
+       LEFT JOIN users ON trips.caller_id = users.id
+       WHERE trips.status = 'requested'
+       ORDER BY trips.requested_at ASC`
     );
     res.json(result.rows);
   } catch (err) {

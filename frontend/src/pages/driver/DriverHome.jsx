@@ -29,8 +29,8 @@ export default function DriverHome() {
   }, []);
 
   useEffect(() => {
-  api.get("/trips/earnings/mine").then((res) => setEarnings(res.data)).catch(() => {});
-}, []);
+    api.get("/trips/earnings/mine").then((res) => setEarnings(res.data)).catch(() => {});
+  }, []);
 
   async function toggleAvailability() {
     const next = !available;
@@ -102,22 +102,22 @@ export default function DriverHome() {
         </button>
       </div>
 
-      {/* Map placeholder */}
-     <div className="mx-4 mt-4">
-  <LiveMap userLocation={myLocation} height="160px" zoom={13} />
-</div>
+      {/* Live map */}
+      <div className="mx-4 mt-4">
+        <LiveMap userLocation={myLocation} height="160px" zoom={13} />
+      </div>
 
       {/* Stat cards */}
-    <div className="grid grid-cols-2 gap-3 mx-4 mt-4">
-  <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
-    <p className="text-xs text-nirvaan-outline font-semibold">Today's Earnings</p>
-    <p className="text-xl font-extrabold text-nirvaan-primary mt-1">₹{earnings.today_earnings.toFixed(2)}</p>
-  </div>
-  <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
-    <p className="text-xs text-nirvaan-outline font-semibold">Completed</p>
-    <p className="text-xl font-extrabold text-nirvaan-secondary mt-1">{earnings.completed_rides} Rides</p>
-  </div>
-</div>
+      <div className="grid grid-cols-2 gap-3 mx-4 mt-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
+          <p className="text-xs text-nirvaan-outline font-semibold">Today's Earnings</p>
+          <p className="text-xl font-extrabold text-nirvaan-primary mt-1">₹{earnings.today_earnings.toFixed(2)}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
+          <p className="text-xs text-nirvaan-outline font-semibold">Completed</p>
+          <p className="text-xl font-extrabold text-nirvaan-secondary mt-1">{earnings.completed_rides} Rides</p>
+        </div>
+      </div>
 
       {error && <p className="text-nirvaan-primary text-sm text-center mt-3 font-medium">{error}</p>}
 
@@ -140,25 +140,35 @@ export default function DriverHome() {
                   <Ambulance className="w-4 h-4" /> Emergency Request
                 </span>
                 <span className="text-xs text-nirvaan-outline font-semibold bg-white px-2 py-1 rounded-full">
-  {new Date(r.requested_at).toLocaleString([], {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  })}
-</span>
+                  {new Date(r.requested_at).toLocaleString([], {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
+
               <p className="text-xs text-nirvaan-outline font-semibold">PICKUP LOCATION</p>
               <p className="font-bold text-nirvaan-dark mb-3">
                 {r.pickup_address || `${r.pickup_lat.toFixed(4)}, ${r.pickup_lng.toFixed(4)}`}
               </p>
+
+              <div className="flex items-center gap-2 mb-3 pt-2 border-t border-white/50">
+                <User className="w-4 h-4 text-nirvaan-outline" />
+                <div>
+                  <p className="text-sm font-bold text-nirvaan-dark">{r.caller_name || "Patient"}</p>
+                  {r.caller_phone && <p className="text-xs text-nirvaan-outline">{r.caller_phone}</p>}
+                </div>
+              </div>
+
               <div className="flex gap-3">
-   <button
-  onClick={() => setRequests((prev) => prev.filter((req) => req.id !== r.id))}
-  className="flex-1 border-2 border-nirvaan-primary text-nirvaan-primary py-2.5 rounded-lg font-bold"
->
-  Decline
-</button>
+                <button
+                  onClick={() => setRequests((prev) => prev.filter((req) => req.id !== r.id))}
+                  className="flex-1 border-2 border-nirvaan-primary text-nirvaan-primary py-2.5 rounded-lg font-bold"
+                >
+                  Decline
+                </button>
                 <button
                   onClick={() => handleAccept(r.id)}
                   className="flex-1 bg-nirvaan-success text-white py-2.5 rounded-lg font-bold"

@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const ratingRoutes = require("./routes/ratingRoutes");
 
 const authRoutes = require("./routes/authRoutes");
 const tripRoutes = require("./routes/tripRoutes");
@@ -21,7 +22,7 @@ const app = express();
 app.use(cors({ origin: allowedOrigins }));
 app.options("*", cors({ origin: allowedOrigins }));
 app.use(express.json());
-
+app.use("/api/ratings", ratingRoutes);
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);

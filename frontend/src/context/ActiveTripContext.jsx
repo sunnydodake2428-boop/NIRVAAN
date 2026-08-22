@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import api from "../api/client";
 
 const ActiveTripContext = createContext();
@@ -6,6 +7,8 @@ const ActiveTripContext = createContext();
 export function ActiveTripProvider({ children }) {
   const [activeTripId, setActiveTripId] = useState(() => localStorage.getItem("activeTripId"));
   const [activeTrip, setActiveTrip] = useState(null);
+  const [driverLocation, setDriverLocation] = useState(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     if (!activeTripId) {
@@ -30,6 +33,14 @@ export function ActiveTripProvider({ children }) {
     return () => clearInterval(interval);
   }, [activeTripId]);
 
+  useEffect(() => {
+    if (!activeTripId) return;
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+    socketRef.current.emit("join-trip", activeTripId);
+    socketRef.current.on("location-update", (loc) => setDriverLocation(loc));
+    return () => socketRef.current?.disconnect();
+  }, [activeTripId]);
+
   function startActiveTrip(tripId) {
     localStorage.setItem("activeTripId", tripId);
     setActiveTripId(tripId);
@@ -39,10 +50,11 @@ export function ActiveTripProvider({ children }) {
     localStorage.removeItem("activeTripId");
     setActiveTripId(null);
     setActiveTrip(null);
+    setDriverLocation(null);
   }
 
   return (
-    <ActiveTripContext.Provider value={{ activeTrip, startActiveTrip, clearActiveTrip }}>
+    <ActiveTripContext.Provider value={{ activeTrip, driverLocation, startActiveTrip, clearActiveTrip }}>
       {children}
     </ActiveTripContext.Provider>
   );

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import { useActiveTrip } from "../../context/ActiveTripContext";
+import { reverseGeocode } from "../../utils/geo";
 import {
   Ambulance,
   PhoneCall,
@@ -25,12 +26,14 @@ export default function PatientHome() {
     setError("");
     try {
       const pos = await getCurrentPosition();
+      const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
       const { data } = await api.post("/trips", {
         pickup_lat: pos.coords.latitude,
         pickup_lng: pos.coords.longitude,
-        pickup_address: "Current Location",
+        pickup_address: address,
       });
       navigate(`/patient/trip/${data.id}`);
+      startActiveTrip(data.id);
     } catch (err) {
       setError(err.response?.data?.error || "Could not request ambulance. Check location permission.");
     } finally {

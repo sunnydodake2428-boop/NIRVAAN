@@ -1,13 +1,20 @@
 import { Link, useLocation } from "react-router-dom";
 import { useActiveTrip } from "../context/ActiveTripContext";
+import { getDistanceKm, getEtaMinutes } from "../utils/geo";
 import { Ambulance, ChevronRight } from "lucide-react";
 
 export default function ActiveTripBar() {
-  const { activeTrip } = useActiveTrip();
+  const { activeTrip, driverLocation } = useActiveTrip();
   const location = useLocation();
 
   if (!activeTrip) return null;
   if (location.pathname === `/patient/trip/${activeTrip.id}`) return null;
+
+  const distanceKm =
+    driverLocation && activeTrip.pickup_lat
+      ? getDistanceKm(activeTrip.pickup_lat, activeTrip.pickup_lng, driverLocation.lat, driverLocation.lng)
+      : null;
+  const eta = distanceKm ? getEtaMinutes(distanceKm) : null;
 
   return (
     <Link
@@ -19,7 +26,9 @@ export default function ActiveTripBar() {
           <Ambulance className="w-4 h-4" />
         </span>
         <div>
-          <p className="text-xs opacity-90">Trip in progress</p>
+          <p className="text-xs opacity-90">
+            {eta ? `Arriving in ${eta} mins` : "Trip in progress"}
+          </p>
           <p className="text-sm font-bold capitalize">{activeTrip.status}</p>
         </div>
       </div>
