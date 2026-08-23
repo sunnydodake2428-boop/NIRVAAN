@@ -7,5 +7,6 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.get("/me", verifyToken, getProfile);
 router.patch("/me", verifyToken, updateProfile);
+router.post("/google", googleLogin);
 
 module.exports = router;

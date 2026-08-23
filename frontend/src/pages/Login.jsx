@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/client";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { Ambulance, ArrowRight } from "lucide-react";
 
 const ROLES = [
@@ -27,13 +28,30 @@ export default function Login() {
     try {
       const endpoint = mode === "login" ? "/auth/login" : "/auth/signup";
       const payload =
-        mode === "login" ? { phone, password } : { name, phone, password, role, vehicle_number: vehicleNumber };
+        mode === "login"
+          ? { phone, password }
+          : { name, phone, password, role, vehicle_number: vehicleNumber };
       const { data } = await api.post(endpoint, payload);
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.user.role);
       navigate(`/${roleToPath[data.user.role] || "login"}`);
     } catch (err) {
       setError(err.response?.data?.error || `${mode === "login" ? "Login" : "Signup"} failed`);
+    }
+  }
+
+  async function handleGoogleSuccess(credentialResponse) {
+    setError("");
+    try {
+      const { data } = await api.post("/auth/google", {
+        credential: credentialResponse.credential,
+        role,
+      });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role);
+      navigate(`/${roleToPath[data.user.role] || "login"}`);
+    } catch (err) {
+      setError(err.response?.data?.error || "Google sign-in failed");
     }
   }
 
@@ -68,57 +86,66 @@ export default function Login() {
           </button>
         </div>
 
-        {mode === "signup" && (
-          <>
-            <p className="text-sm font-semibold text-nirvaan-dark mb-2">Continue as</p>
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              {ROLES.map((r) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  onClick={() => setRole(r.key)}
-                  className={`py-3 rounded-lg text-sm font-semibold border transition ${
-                    role === r.key
-                      ? "bg-nirvaan-error-container border-nirvaan-primary text-nirvaan-primary"
-                      : "bg-nirvaan-surface border-transparent text-nirvaan-dark"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        <p className="text-sm font-semibold text-nirvaan-dark mb-2">Continue as</p>
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {ROLES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              onClick={() => setRole(r.key)}
+              className={`py-3 rounded-lg text-sm font-semibold border transition ${
+                role === r.key
+                  ? "bg-nirvaan-error-container border-nirvaan-primary text-nirvaan-primary"
+                  : "bg-nirvaan-surface border-transparent text-nirvaan-dark"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Google Sign-In */}
+        <div className="flex justify-center mb-5">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google sign-in failed")}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-nirvaan-outline-variant" />
+          <span className="text-xs font-semibold text-nirvaan-outline">OR</span>
+          <div className="flex-1 h-px bg-nirvaan-outline-variant" />
+        </div>
 
         <form onSubmit={handleSubmit}>
           {error && <p className="text-nirvaan-primary text-sm mb-3 font-medium">{error}</p>}
 
-         {mode === "signup" && (
-  <>
-    <label className="text-sm font-semibold text-nirvaan-dark mb-1 block">Full Name</label>
-    <input
-      className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-3 mb-4 bg-white focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
-      placeholder="Enter your name"
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      required
-    />
+          {mode === "signup" && (
+            <>
+              <label className="text-sm font-semibold text-nirvaan-dark mb-1 block">Full Name</label>
+              <input
+                className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-3 mb-4 bg-white focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
 
-    {role === "driver" && (
-      <>
-        <label className="text-sm font-semibold text-nirvaan-dark mb-1 block">Vehicle Number</label>
-        <input
-          className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-3 mb-4 bg-white focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
-          placeholder="e.g. MH 12 AB 1234"
-          value={vehicleNumber}
-          onChange={(e) => setVehicleNumber(e.target.value)}
-          required
-        />
-      </>
-    )}
-  </>
-)}
-
+              {role === "driver" && (
+                <>
+                  <label className="text-sm font-semibold text-nirvaan-dark mb-1 block">Vehicle Number</label>
+                  <input
+                    className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-3 mb-4 bg-white focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
+                    placeholder="e.g. MH 12 AB 1234"
+                    value={vehicleNumber}
+                    onChange={(e) => setVehicleNumber(e.target.value)}
+                    required
+                  />
+                </>
+              )}
+            </>
+          )}
 
           <label className="text-sm font-semibold text-nirvaan-dark mb-1 block">Phone Number</label>
           <div className="flex mb-4">

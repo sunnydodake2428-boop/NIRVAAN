@@ -99,5 +99,42 @@ async function getProfile(req, res) {
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 }
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client("1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com");
 
-module.exports = { signup, login, updateProfile, getProfile };
+async function googleLogin(req, res) {
+  try {
+    const { credential, role } = req.body;
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: "1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com",
+    });
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+
+    let userResult = await pool.query("SELECT * FROM users WHERE phone = $1", [email]);
+    let user;
+
+    if (userResult.rows.length === 0) {
+      const password_hash = await bcrypt.hash(email + Date.now(), 10);
+      const insertResult = await pool.query(
+        `INSERT INTO users (name, phone, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, phone, role`,
+        [name, email, password_hash, role || "caller"]
+      );
+      user = insertResult.rows[0];
+      if (user.role === "driver") {
+        await pool.query("INSERT INTO drivers (user_id) VALUES ($1)", [user.id]);
+      }
+    } else {
+      user = userResult.rows[0];
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.json({ user: { id: user.id, name: user.name, phone: user.phone, role: user.role }, token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Google login failed" });
+  }
+}
+
+module.exports = { signup, login, updateProfile, getProfile, googleLogin };
