@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import api from "../../api/client";
 import { getDistanceKm, getEtaMinutes } from "../../utils/geo";
 import LiveMap from "../../components/LiveMap";
+import { Star } from "lucide-react";
 import {
   Ambulance,
   PhoneCall,
@@ -110,6 +111,12 @@ export default function LiveTracking() {
               <p className="text-xs text-nirvaan-success font-semibold flex items-center gap-1">
                 <BadgeCheck className="w-3.5 h-3.5" /> Verified
               </p>
+              {trip.driver_avg_rating && (
+                <p className="text-sm text-nirvaan-dark font-bold mt-1 flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  {trip.driver_avg_rating} ({trip.driver_total_ratings} ratings)
+                </p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-xs text-nirvaan-outline font-semibold">VEHICLE</p>

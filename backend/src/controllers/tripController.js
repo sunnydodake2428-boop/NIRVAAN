@@ -147,7 +147,9 @@ async function getTripDetails(req, res) {
          drivers.vehicle_number,
          drivers.vehicle_type,
          drivers.current_lat,
-         drivers.current_lng
+         drivers.current_lng,
+         (SELECT AVG(rating)::numeric(3,2) FROM driver_ratings WHERE driver_id = trips.driver_id) AS driver_avg_rating,
+         (SELECT COUNT(*) FROM driver_ratings WHERE driver_id = trips.driver_id) AS driver_total_ratings
        FROM trips
        LEFT JOIN drivers ON trips.driver_id = drivers.id
        LEFT JOIN users ON drivers.user_id = users.id

@@ -1,4 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "../../api/client";
+import { Star } from "lucide-react";
 import {
   Ambulance,
   PhoneCall,
@@ -28,6 +31,11 @@ export default function DriverProfile() {
   { icon: BadgeCheck, label: "Verification Status" },
   { icon: Settings, label: "Settings" },
 ];
+const [ratingData, setRatingData] = useState(null);
+
+useEffect(() => {
+  api.get("/ratings/me").then((res) => setRatingData(res.data)).catch(() => {});
+}, []);
 
   return (
     <div className="min-h-screen bg-nirvaan-bg pb-24 max-w-md mx-auto md:max-w-lg">
@@ -50,6 +58,12 @@ export default function DriverProfile() {
             <BadgeCheck className="w-4 h-4" /> Verified
           </p>
         </div>
+        {ratingData?.avg_rating && (
+  <p className="text-sm text-nirvaan-dark font-bold mt-1 flex items-center gap-1">
+    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+    {ratingData.avg_rating} ({ratingData.total_ratings} ratings)
+  </p>
+)}
 
         <div className="bg-white rounded-xl shadow-sm border border-nirvaan-surface-high divide-y divide-nirvaan-surface-high overflow-hidden">
           {options.map((opt) =>
