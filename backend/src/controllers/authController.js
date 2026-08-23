@@ -90,7 +90,7 @@ async function updateProfile(req, res) {
 async function getProfile(req, res) {
   try {
     const result = await pool.query(
-      "SELECT id, name, phone, role FROM users WHERE id = $1",
+      "SELECT id, name, phone, avatar_url, role FROM users WHERE id = $1",
       [req.user.id]
     );
     res.json(result.rows[0]);
@@ -110,17 +110,17 @@ async function googleLogin(req, res) {
       audience: "1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com",
     });
     const payload = ticket.getPayload();
-    const { email, name } = payload;
+    const { email, name, picture } = payload;
 
     let userResult = await pool.query("SELECT * FROM users WHERE phone = $1", [email]);
     let user;
 
     if (userResult.rows.length === 0) {
       const password_hash = await bcrypt.hash(email + Date.now(), 10);
-      const insertResult = await pool.query(
-        `INSERT INTO users (name, phone, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, phone, role`,
-        [name, email, password_hash, role || "caller"]
-      );
+     const insertResult = await pool.query(
+  `INSERT INTO users (name, phone, password_hash, role, avatar_url) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, phone, role, avatar_url`,
+  [name, email, password_hash, role || "caller", picture]
+);
       user = insertResult.rows[0];
       if (user.role === "driver") {
         await pool.query("INSERT INTO drivers (user_id) VALUES ($1)", [user.id]);
@@ -130,7 +130,7 @@ async function googleLogin(req, res) {
     }
 
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ user: { id: user.id, name: user.name, phone: user.phone, role: user.role }, token });
+    res.json({ user: { id: user.id, name: user.name, phone: user.phone, role: user.role, avatar_url: user.avatar_url }, token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Google login failed" });
