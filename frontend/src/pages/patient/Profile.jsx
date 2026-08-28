@@ -12,6 +12,8 @@ import {
   Bot,
   History,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import api from "../../api/client";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -22,6 +24,11 @@ export default function Profile() {
     localStorage.removeItem("role");
     navigate("/login");
   }
+  const [profile, setProfile] = useState(null);
+
+useEffect(() => {
+  api.get("/auth/me").then((res) => setProfile(res.data)).catch(() => {});
+}, []);
 
   const options = [
     { icon: FileEdit, label: "Edit Profile", link: "/patient/edit-profile" },
@@ -43,11 +50,17 @@ export default function Profile() {
 
       <div className="px-4 pt-4">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-24 h-24 rounded-full bg-nirvaan-surface-highest flex items-center justify-center mb-3 border-2 border-white shadow-sm">
-            <User className="w-11 h-11 text-nirvaan-secondary" />
-          </div>
-          <h2 className="text-xl font-extrabold text-nirvaan-dark">Patient Account</h2>
-          <p className="text-sm text-nirvaan-outline capitalize font-medium">{role}</p>
+         <div className="w-24 h-24 rounded-full bg-nirvaan-surface-highest flex items-center justify-center mb-3 border-2 border-white shadow-sm overflow-hidden">
+  {profile?.avatar_url ? (
+    <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+  ) : (
+    <User className="w-11 h-11 text-nirvaan-secondary" />
+  )}
+</div>
+<h2 className="text-xl font-extrabold text-nirvaan-dark">{profile?.name || "Patient Account"}</h2>
+<p className="text-sm text-nirvaan-outline font-medium">
+  {profile?.phone?.includes("@") ? profile.phone : "Patient"}
+</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-nirvaan-surface-high divide-y divide-nirvaan-surface-high overflow-hidden">
