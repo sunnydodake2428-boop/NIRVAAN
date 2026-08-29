@@ -63,9 +63,13 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
     if (!loaded || !mapRef.current) return;
 
     if (userLocation && driverLocation) {
-      const bounds = getBounds(userLocation, driverLocation);
-      mapRef.current.fitBounds(bounds, { padding: 60, duration: 800, maxZoom: 15 });
-    } else if (driverLocation) {
+  const bounds = getBounds(userLocation, driverLocation);
+  try {
+    mapRef.current.fitBounds(bounds, { padding: 40, duration: 800, maxZoom: 15 });
+  } catch (err) {
+    console.error("fitBounds failed:", err);
+  }
+}else if (driverLocation) {
       mapRef.current.flyTo({ center: [driverLocation.lng, driverLocation.lat], zoom: 14, duration: 800 });
     } else if (userLocation) {
       mapRef.current.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 14, duration: 800 });
