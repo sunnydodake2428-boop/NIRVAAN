@@ -16,23 +16,32 @@ const rasterStyle = {
 
 function useRoadRoute(from, to) {
   const [route, setRoute] = useState(null);
+
   useEffect(() => {
-    if (!from || !to) {
-      setRoute(null);
+    if (!from || !to || !from.lat || !from.lng || !to.lat || !to.lng) {
       return;
     }
+
     const controller = new AbortController();
-    fetch(
-      `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`,
-      { signal: controller.signal }
-    )
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+
+    console.log("Fetching route:", url);
+
+    fetch(url, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (data.routes && data.routes[0]) setRoute(data.routes[0].geometry);
+        console.log("Route response:", data);
+        if (data.routes && data.routes[0]) {
+          setRoute(data.routes[0].geometry);
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Route fetch error:", err);
+      });
+
     return () => controller.abort();
   }, [from?.lat, from?.lng, to?.lat, to?.lng]);
+
   return route;
 }
 
