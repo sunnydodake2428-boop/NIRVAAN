@@ -126,16 +126,21 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
           </Marker>
         )}
 
-        {roadRoute && (
-          <Source id="route" type="geojson" data={{ type: "Feature", geometry: roadRoute }}>
-            <Layer
-              id="route-line"
-              type="line"
-              layout={{ "line-join": "round", "line-cap": "round" }}
-              paint={{ "line-color": "#0051D5", "line-width": 5, "line-opacity": 0.9 }}
-            />
-          </Source>
-        )}
+      {roadRoute && loaded && (
+  <Source key="route-source" id="route" type="geojson" data={{ type: "Feature", geometry: roadRoute }}>
+    <Layer
+      id="route-line"
+      type="line"
+      layout={{ "line-join": "round", "line-cap": "round" }}
+      paint={{
+        "line-color": "#0051D5",
+        "line-width": 6,
+        "line-opacity": 1,
+      }}
+      beforeId={undefined}
+    />
+  </Source>
+)}
       </Map>
 
       <div
