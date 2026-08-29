@@ -104,7 +104,7 @@ export default function DriverHome() {
 
       {/* Live map */}
       <div className="mx-4 mt-4">
-        <LiveMap userLocation={myLocation} height="160px" zoom={13} />
+        {myLocation && <LiveMap userLocation={myLocation} height="180px" zoom={13} />}
       </div>
 
       {/* Stat cards */}
