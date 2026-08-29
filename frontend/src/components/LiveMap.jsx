@@ -31,11 +31,13 @@ function Recenter({ lat, lng }) {
 function InvalidateSizeOnMount() {
   const map = useMap();
   useEffect(() => {
-    const timer = setTimeout(() => map.invalidateSize(), 200);
+    const timers = [100, 300, 600, 1000].map((delay) =>
+      setTimeout(() => map.invalidateSize(), delay)
+    );
     const resizeObserver = new ResizeObserver(() => map.invalidateSize());
     resizeObserver.observe(map.getContainer());
     return () => {
-      clearTimeout(timer);
+      timers.forEach(clearTimeout);
       resizeObserver.disconnect();
     };
   }, [map]);
