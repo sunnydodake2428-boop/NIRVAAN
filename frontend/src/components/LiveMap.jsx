@@ -77,13 +77,14 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
       style={{ height, width: "100%", minHeight: "300px", position: "relative" }}
       className="rounded-xl overflow-hidden shadow-sm border border-nirvaan-surface-high"
     >
-      <Map
-        ref={mapRef}
-        initialViewState={{ longitude: center.lng, latitude: center.lat, zoom }}
-        mapStyle={rasterStyle}
-        style={{ width: "100%", height: "100%" }}
-        onLoad={() => setLoaded(true)}
-      >
+     <Map
+  ref={mapRef}
+  initialViewState={{ longitude: center.lng, latitude: center.lat, zoom }}
+  mapStyle={rasterStyle}
+  style={{ width: "100%", height: "100%" }}
+  onLoad={() => setLoaded(true)}
+  onError={(e) => console.error("MapLibre error:", e.error)}
+>
         {userLocation && (
           <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="center">
             <div
