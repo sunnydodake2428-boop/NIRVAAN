@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import api from "../../api/client";
 import LiveMap from "../../components/LiveMap";
+import { getDistanceKm, getEtaMinutes } from "../../utils/geo";
 import { Ambulance } from "lucide-react";
 
 export default function DriverTrip() {
@@ -14,7 +15,6 @@ export default function DriverTrip() {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
 
-  // Fetch the patient's pickup location for this trip
   useEffect(() => {
     api.get(`/trips/${tripId}`).then(({ data }) => {
       setPatientLocation({ lat: data.pickup_lat, lng: data.pickup_lng });
@@ -60,6 +60,12 @@ export default function DriverTrip() {
     }
   }
 
+  const distanceKm =
+    myLocation && patientLocation
+      ? getDistanceKm(myLocation.lat, myLocation.lng, patientLocation.lat, patientLocation.lng)
+      : null;
+  const etaMinutes = distanceKm ? getEtaMinutes(distanceKm) : null;
+
   return (
     <div className="min-h-screen bg-nirvaan-bg flex flex-col max-w-md mx-auto md:max-w-lg">
       <header className="flex items-center justify-between px-4 py-4 bg-white shadow-sm">
@@ -75,6 +81,16 @@ export default function DriverTrip() {
       <div style={{ height: "340px" }} className="relative z-0 p-2">
         <LiveMap userLocation={patientLocation} driverLocation={myLocation} height="100%" />
       </div>
+
+      {distanceKm && (
+        <div className="bg-nirvaan-primary text-white px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm opacity-90 font-medium">To patient pickup</p>
+            <p className="text-2xl font-extrabold mt-0.5">{etaMinutes} mins</p>
+          </div>
+          <p className="text-lg font-bold">{distanceKm.toFixed(1)} km</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.08)] p-5">
         <p className="text-sm text-nirvaan-outline font-semibold">Trip #{tripId}</p>
