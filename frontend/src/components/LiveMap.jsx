@@ -16,45 +16,55 @@ const rasterStyle = {
 
 function useRoadRoute(from, to) {
   const [route, setRoute] = useState(null);
-
   useEffect(() => {
-    if (!from || !to || !from.lat || !from.lng || !to.lat || !to.lng) {
+    if (!from || !to) {
+      setRoute(null);
       return;
     }
-
     const controller = new AbortController();
-    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
-
-    console.log("Fetching route:", url);
-
-    fetch(url, { signal: controller.signal })
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`,
+      { signal: controller.signal }
+    )
       .then((res) => res.json())
       .then((data) => {
-        console.log("Route response:", data);
-        if (data.routes && data.routes[0]) {
-          setRoute(data.routes[0].geometry);
-        }
+        if (data.routes && data.routes[0]) setRoute(data.routes[0].geometry);
       })
-      .catch((err) => {
-        console.error("Route fetch error:", err);
-      });
-
+      .catch(() => {});
     return () => controller.abort();
   }, [from?.lat, from?.lng, to?.lat, to?.lng]);
-
   return route;
+}
+
+// Compute bounding box that contains both points, with padding
+function getBounds(p1, p2) {
+  const lngs = [p1.lng, p2.lng];
+  const lats = [p1.lat, p2.lat];
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
 }
 
 export default function LiveMap({ userLocation, driverLocation, height = "340px", zoom = 14 }) {
   const mapRef = useRef();
   const center = driverLocation || userLocation || { lat: 20.5937, lng: 78.9629 };
   const roadRoute = useRoadRoute(driverLocation, userLocation);
+  const [loaded, setLoaded] = useState(false);
 
+  // Fit the map to show BOTH points whenever either location changes
   useEffect(() => {
-    if (driverLocation && mapRef.current) {
-      mapRef.current.flyTo({ center: [driverLocation.lng, driverLocation.lat], duration: 800 });
+    if (!loaded || !mapRef.current) return;
+
+    if (userLocation && driverLocation) {
+      const bounds = getBounds(userLocation, driverLocation);
+      mapRef.current.fitBounds(bounds, { padding: 60, duration: 800, maxZoom: 15 });
+    } else if (driverLocation) {
+      mapRef.current.flyTo({ center: [driverLocation.lng, driverLocation.lat], zoom: 14, duration: 800 });
+    } else if (userLocation) {
+      mapRef.current.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 14, duration: 800 });
     }
-  }, [driverLocation]);
+  }, [userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng, loaded]);
 
   return (
     <div
@@ -66,6 +76,7 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
         initialViewState={{ longitude: center.lng, latitude: center.lat, zoom }}
         mapStyle={rasterStyle}
         style={{ width: "100%", height: "100%" }}
+        onLoad={() => setLoaded(true)}
       >
         {userLocation && (
           <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="center">
@@ -87,7 +98,12 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
 
         {roadRoute && (
           <Source id="route" type="geojson" data={{ type: "Feature", geometry: roadRoute }}>
-            <Layer id="route-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }} paint={{ "line-color": "#0051D5", "line-width": 5, "line-opacity": 0.85 }} />
+            <Layer
+              id="route-line"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{ "line-color": "#0051D5", "line-width": 5, "line-opacity": 0.9 }}
+            />
           </Source>
         )}
       </Map>
