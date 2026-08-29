@@ -32,7 +32,12 @@ function InvalidateSizeOnMount() {
   const map = useMap();
   useEffect(() => {
     const timer = setTimeout(() => map.invalidateSize(), 200);
-    return () => clearTimeout(timer);
+    const resizeObserver = new ResizeObserver(() => map.invalidateSize());
+    resizeObserver.observe(map.getContainer());
+    return () => {
+      clearTimeout(timer);
+      resizeObserver.disconnect();
+    };
   }, [map]);
   return null;
 }

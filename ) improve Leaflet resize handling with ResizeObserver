@@ -1,0 +1,15 @@
+[33mfea3632[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m chore: remove debug logs, clean up backend
+[33m5613012[m feat(profile): show Google avatar and real name/email on profile pages
+[33md30ad82[m added the avatar part
+[33m6607bb6[m fix(auth): import googleLogin in authRoutes
+[33m74ebefc[m feat(auth): add Google Sign-In with backend token verification
+[33m52392aa[m feat(maps): add real road-following routes via OSRM and custom marker icons
+[33mf0fc3f1[m feat(ratings): display average rating on driver profile and live tracking
+[33m7e477fa[m feat(ratings): add driver rating and review system
+[33me608f83[m fix(cors): trim whitespace from CORS_ORIGIN env values
+[33m7d87bba[m debug: log CORS_ORIGIN value
+[33m4d277cb[m fix(cors): add explicit OPTIONS preflight handler
+[33m970af8d[m fix(cors): correct middleware order so CORS applies before routes
+[33med6c226[m chore: add root gitignore and lockfile
+[33m416c285[m feat(frontend): add React app with Patient, Driver, Admin panels and live tracking
+[33mea6649f[m feat(backend): add Express API, auth, trips, drivers, hospitals, sockets
