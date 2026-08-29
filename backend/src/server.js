@@ -15,8 +15,7 @@ const registerTrackingSocket = require("./sockets/trackingSocket");
 const allowedOrigins = (process.env.CORS_ORIGIN || "*")
   .split(",")
   .map((origin) => origin.trim());
-console.log("CORS_ORIGIN raw value:", JSON.stringify(process.env.CORS_ORIGIN));
-console.log("Allowed origins array:", allowedOrigins);
+
 
 const app = express();
 app.use(cors({ origin: allowedOrigins }));
