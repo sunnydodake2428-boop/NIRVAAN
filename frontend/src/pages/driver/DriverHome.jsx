@@ -58,7 +58,8 @@ export default function DriverHome() {
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 8000);
+    const interval = setInterval(fetchRequests, 3000);
+    
     return () => clearInterval(interval);
   }, [available]);
 

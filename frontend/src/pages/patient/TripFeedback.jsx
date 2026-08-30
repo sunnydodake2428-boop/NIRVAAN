@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
+import { getDistanceKm } from "../../utils/geo";
 import {
   Ambulance,
   PhoneCall,
@@ -21,6 +22,16 @@ export default function TripFeedback() {
   const [amount, setAmount] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [trip, setTrip] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .get(`/trips/${tripId}`)
+      .then(({ data }) => setTrip(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [tripId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -32,6 +43,16 @@ export default function TripFeedback() {
       setError(err.response?.data?.error || "Could not submit feedback");
     }
   }
+
+  const distanceKm =
+    trip?.pickup_lat && trip?.current_lat
+      ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.current_lat, trip.current_lng)
+      : null;
+
+  const durationMin =
+    trip?.requested_at && trip?.completed_at
+      ? Math.round((new Date(trip.completed_at) - new Date(trip.requested_at)) / 60000)
+      : null;
 
   return (
     <div className="min-h-screen bg-nirvaan-bg pb-24 max-w-md mx-auto md:max-w-lg">
@@ -56,27 +77,33 @@ export default function TripFeedback() {
         </p>
       </div>
 
-      {/* Distance / Duration */}
+      {/* Distance / Duration — real data */}
       <div className="grid grid-cols-2 gap-3 px-4 mt-6">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
           <p className="text-xs text-nirvaan-outline font-semibold flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" /> DISTANCE
           </p>
-          <p className="text-xl font-extrabold text-nirvaan-dark mt-1">12.5 km</p>
+          <p className="text-xl font-extrabold text-nirvaan-dark mt-1">
+            {loading ? "…" : distanceKm ? `${distanceKm.toFixed(1)} km` : "—"}
+          </p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
           <p className="text-xs text-nirvaan-outline font-semibold flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" /> DURATION
           </p>
-          <p className="text-xl font-extrabold text-nirvaan-dark mt-1">24 min</p>
+          <p className="text-xl font-extrabold text-nirvaan-dark mt-1">
+            {loading ? "…" : durationMin ? `${durationMin} min` : "—"}
+          </p>
         </div>
       </div>
 
-      {/* Destination */}
+      {/* Destination — real data */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high mx-4 mt-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-nirvaan-outline font-semibold">DESTINATION</p>
-          <p className="font-bold text-nirvaan-dark mt-0.5">City General Hospital</p>
+          <p className="text-xs text-nirvaan-outline font-semibold">PICKUP LOCATION</p>
+          <p className="font-bold text-nirvaan-dark mt-0.5">
+            {loading ? "…" : trip?.pickup_address || "—"}
+          </p>
         </div>
         <span className="w-9 h-9 rounded-full bg-nirvaan-surface flex items-center justify-center">
           <MapPin className="w-4 h-4 text-nirvaan-secondary" />
