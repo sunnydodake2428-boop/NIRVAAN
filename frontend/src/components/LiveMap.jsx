@@ -61,45 +61,49 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
 
   // Imperatively add/update the route source+layer directly on the map instance
   useEffect(() => {
-    if (!loaded || !mapRef.current) return;
-    const map = mapRef.current.getMap();
-    if (!map) return;
+  console.log("Route effect running. loaded:", loaded, "roadRoute:", roadRoute, "userLocation:", userLocation, "driverLocation:", driverLocation);
 
-    const geojsonData = {
-      type: "Feature",
-      geometry:
-        roadRoute ||
-        (userLocation && driverLocation
-          ? {
-              type: "LineString",
-              coordinates: [
-                [driverLocation.lng, driverLocation.lat],
-                [userLocation.lng, userLocation.lat],
-              ],
-            }
-          : null),
-    };
+  if (!loaded || !mapRef.current) return;
+  const map = mapRef.current.getMap();
+  if (!map) return;
 
-    if (!geojsonData.geometry) {
-      if (map.getLayer("route-line")) map.removeLayer("route-line");
-      if (map.getSource("route")) map.removeSource("route");
-      return;
-    }
+  const geojsonData = {
+    type: "Feature",
+    geometry:
+      roadRoute ||
+      (userLocation && driverLocation
+        ? {
+            type: "LineString",
+            coordinates: [
+              [driverLocation.lng, driverLocation.lat],
+              [userLocation.lng, userLocation.lat],
+            ],
+          }
+        : null),
+  };
 
-    if (map.getSource("route")) {
-      map.getSource("route").setData(geojsonData);
-    } else {
-      map.addSource("route", { type: "geojson", data: geojsonData });
-     map.addLayer({
-  id: "route-line",
-  type: "line",
-  source: "route",
-  layout: { "line-join": "round", "line-cap": "round", visibility: "visible" },
-  paint: { "line-color": "#00FF00", "line-width": 10, "line-opacity": 1 },
-});
-map.moveLayer("route-line");
-    }
-  }, [loaded, roadRoute, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
+  if (!geojsonData.geometry) {
+    if (map.getLayer("route-line")) map.removeLayer("route-line");
+    if (map.getSource("route")) map.removeSource("route");
+    return;
+  }
+
+  if (map.getSource("route")) {
+    map.getSource("route").setData(geojsonData);
+  } else {
+    map.addSource("route", { type: "geojson", data: geojsonData });
+    map.addLayer({
+      id: "route-line",
+      type: "line",
+      source: "route",
+      layout: { "line-join": "round", "line-cap": "round", visibility: "visible" },
+      paint: { "line-color": "#00FF00", "line-width": 10, "line-opacity": 1 },
+    });
+    console.log("Route layer added. Source data:", geojsonData);
+    console.log("Map has layer 'route-line':", map.getLayer("route-line") ? "YES" : "NO");
+    map.moveLayer("route-line");
+  }
+}, [loaded, roadRoute, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
   // Fit the map to show both points
   useEffect(() => {
