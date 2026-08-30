@@ -90,13 +90,14 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
       map.getSource("route").setData(geojsonData);
     } else {
       map.addSource("route", { type: "geojson", data: geojsonData });
-      map.addLayer({
-        id: "route-line",
-        type: "line",
-        source: "route",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#0051D5", "line-width": 6, "line-opacity": 0.95 },
-      });
+     map.addLayer({
+  id: "route-line",
+  type: "line",
+  source: "route",
+  layout: { "line-join": "round", "line-cap": "round", visibility: "visible" },
+  paint: { "line-color": "#00FF00", "line-width": 10, "line-opacity": 1 },
+});
+map.moveLayer("route-line");
     }
   }, [loaded, roadRoute, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
