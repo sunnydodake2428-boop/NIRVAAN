@@ -102,6 +102,9 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
     console.log("Route layer added. Source data:", geojsonData);
     console.log("Map has layer 'route-line':", map.getLayer("route-line") ? "YES" : "NO");
     map.moveLayer("route-line");
+    map.triggerRepaint();
+    map.resize();
+    
   }
 }, [loaded, roadRoute, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
