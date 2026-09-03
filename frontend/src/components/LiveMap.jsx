@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 
 const rasterStyle = {
@@ -20,7 +20,6 @@ const rasterStyle = {
 
 function useRoadRoute(from, to) {
   const [route, setRoute] = useState(null);
-
   useEffect(() => {
     if (!from || !to) {
       setRoute(null);
@@ -33,14 +32,11 @@ function useRoadRoute(from, to) {
     )
       .then((res) => res.json())
       .then((data) => {
-        if (data.routes && data.routes[0]) {
-          setRoute(data.routes[0].geometry);
-        }
+        if (data.routes && data.routes[0]) setRoute(data.routes[0].geometry.coordinates);
       })
       .catch(() => {});
     return () => controller.abort();
   }, [from?.lat, from?.lng, to?.lat, to?.lng]);
-
   return route;
 }
 
@@ -56,59 +52,51 @@ function getBounds(p1, p2) {
 export default function LiveMap({ userLocation, driverLocation, height = "340px", zoom = 14 }) {
   const mapRef = useRef();
   const center = driverLocation || userLocation || { lat: 20.5937, lng: 78.9629 };
-  const roadRoute = useRoadRoute(driverLocation, userLocation);
+  const routeCoords = useRoadRoute(driverLocation, userLocation);
   const [loaded, setLoaded] = useState(false);
+  const [svgPoints, setSvgPoints] = useState("");
 
-  // Imperatively add/update the route source+layer directly on the map instance
-  useEffect(() => {
-  console.log("Route effect running. loaded:", loaded, "roadRoute:", roadRoute, "userLocation:", userLocation, "driverLocation:", driverLocation);
+  // Recompute the SVG line's pixel coordinates from lng/lat using the map's own projection
+  const updateSvgLine = useCallback(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap();
+    if (!map) return;
 
-  if (!loaded || !mapRef.current) return;
-  const map = mapRef.current.getMap();
-  if (!map) return;
-
-  const geojsonData = {
-    type: "Feature",
-    geometry:
-      roadRoute ||
+    const coords =
+      routeCoords ||
       (userLocation && driverLocation
-        ? {
-            type: "LineString",
-            coordinates: [
-              [driverLocation.lng, driverLocation.lat],
-              [userLocation.lng, userLocation.lat],
-            ],
-          }
-        : null),
-  };
+        ? [
+            [driverLocation.lng, driverLocation.lat],
+            [userLocation.lng, userLocation.lat],
+          ]
+        : null);
 
-  if (!geojsonData.geometry) {
-    if (map.getLayer("route-line")) map.removeLayer("route-line");
-    if (map.getSource("route")) map.removeSource("route");
-    return;
-  }
+    if (!coords) {
+      setSvgPoints("");
+      return;
+    }
 
-  if (map.getSource("route")) {
-    map.getSource("route").setData(geojsonData);
-  } else {
-    map.addSource("route", { type: "geojson", data: geojsonData });
-    map.addLayer({
-      id: "route-line",
-      type: "line",
-      source: "route",
-      layout: { "line-join": "round", "line-cap": "round", visibility: "visible" },
-      paint: { "line-color": "#00FF00", "line-width": 10, "line-opacity": 1 },
-    });
-    console.log("Route layer added. Source data:", geojsonData);
-    console.log("Map has layer 'route-line':", map.getLayer("route-line") ? "YES" : "NO");
-    map.moveLayer("route-line");
-    map.triggerRepaint();
-    map.resize();
-    
-  }
-}, [loaded, roadRoute, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
+    const points = coords
+      .map(([lng, lat]) => {
+        const p = map.project([lng, lat]);
+        return `${p.x},${p.y}`;
+      })
+      .join(" ");
+    setSvgPoints(points);
+  }, [routeCoords, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
-  // Fit the map to show both points
+  useEffect(() => {
+    if (!loaded || !mapRef.current) return;
+    const map = mapRef.current.getMap();
+    updateSvgLine();
+    map.on("move", updateSvgLine);
+    map.on("zoom", updateSvgLine);
+    return () => {
+      map.off("move", updateSvgLine);
+      map.off("zoom", updateSvgLine);
+    };
+  }, [loaded, updateSvgLine]);
+
   useEffect(() => {
     if (!loaded || !mapRef.current) return;
     if (userLocation && driverLocation) {
@@ -127,7 +115,7 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
 
   return (
     <div
-      style={{ height, width: "100%", minHeight: "300px" }}
+      style={{ height, width: "100%", minHeight: "300px", position: "relative" }}
       className="rounded-xl overflow-hidden shadow-sm border border-nirvaan-surface-high"
     >
       <Map
@@ -155,6 +143,30 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
           </Marker>
         )}
       </Map>
+
+      {/* Plain SVG overlay for the route line — bypasses WebGL rendering entirely */}
+      {svgPoints && (
+        <svg
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        >
+          <polyline
+            points={svgPoints}
+            fill="none"
+            stroke="#0051D5"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.9"
+          />
+        </svg>
+      )}
     </div>
   );
 }
