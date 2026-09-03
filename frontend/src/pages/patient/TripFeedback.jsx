@@ -45,9 +45,9 @@ export default function TripFeedback() {
   }
 
   const distanceKm =
-    trip?.pickup_lat && trip?.current_lat
-      ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.current_lat, trip.current_lng)
-      : null;
+  trip?.pickup_lat && trip?.dropoff_lat
+    ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng)
+    : null;
 
   const durationMin =
     trip?.requested_at && trip?.completed_at

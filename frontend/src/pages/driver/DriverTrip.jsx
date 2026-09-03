@@ -50,15 +50,18 @@ export default function DriverTrip() {
     return () => stopSharingLocation();
   }, []);
 
-  async function handleComplete() {
-    try {
-      await api.patch(`/trips/${tripId}/complete`);
-      stopSharingLocation();
-      navigate("/driver");
-    } catch (err) {
-      console.error(err);
-    }
+ async function handleComplete() {
+  try {
+    await api.patch(`/trips/${tripId}/complete`, {
+      dropoff_lat: myLocation?.lat,
+      dropoff_lng: myLocation?.lng,
+    });
+    stopSharingLocation();
+    navigate("/driver");
+  } catch (err) {
+    console.error(err);
   }
+}
 
   const distanceKm =
     myLocation && patientLocation

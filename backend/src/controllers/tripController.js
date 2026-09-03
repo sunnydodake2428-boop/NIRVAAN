@@ -50,10 +50,11 @@ async function acceptTrip(req, res) {
 async function completeTrip(req, res) {
   try {
     const { tripId } = req.params;
+    const { dropoff_lat, dropoff_lng } = req.body;
     const result = await pool.query(
-      `UPDATE trips SET status = 'completed', completed_at = NOW()
+      `UPDATE trips SET status = 'completed', completed_at = NOW(), dropoff_lat = $2, dropoff_lng = $3
        WHERE id = $1 RETURNING *`,
-      [tripId]
+      [tripId, dropoff_lat || null, dropoff_lng || null]
     );
     res.json(result.rows[0]);
   } catch (err) {
