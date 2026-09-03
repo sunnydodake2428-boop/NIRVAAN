@@ -62,6 +62,8 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
     const map = mapRef.current.getMap();
     if (!map) return;
 
+  
+  console.log("Using route:", routeCoords ? "REAL ROAD ROUTE" : "STRAIGHT FALLBACK", coords?.length, "points");
     const coords =
       routeCoords ||
       (userLocation && driverLocation
@@ -86,16 +88,14 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
   }, [routeCoords, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
   useEffect(() => {
-    if (!loaded || !mapRef.current) return;
-    const map = mapRef.current.getMap();
-    updateSvgLine();
-    map.on("move", updateSvgLine);
-    map.on("zoom", updateSvgLine);
-    return () => {
-      map.off("move", updateSvgLine);
-      map.off("zoom", updateSvgLine);
-    };
-  }, [loaded, updateSvgLine]);
+  if (!loaded || !mapRef.current) return;
+  const map = mapRef.current.getMap();
+  updateSvgLine();
+  map.on("render", updateSvgLine);
+  return () => {
+    map.off("render", updateSvgLine);
+  };
+}, [loaded, updateSvgLine]);
 
   useEffect(() => {
     if (!loaded || !mapRef.current) return;
