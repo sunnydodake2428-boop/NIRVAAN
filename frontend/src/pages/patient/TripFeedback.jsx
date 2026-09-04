@@ -48,6 +48,7 @@ export default function TripFeedback() {
   trip?.pickup_lat && trip?.dropoff_lat
     ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng)
     : null;
+    
 
   const durationMin =
     trip?.requested_at && trip?.completed_at
