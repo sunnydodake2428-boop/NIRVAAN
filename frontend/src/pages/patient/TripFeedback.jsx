@@ -14,6 +14,7 @@ import {
   Bot,
   History,
   User,
+  Star,
 } from "lucide-react";
 
 export default function TripFeedback() {
@@ -24,6 +25,11 @@ export default function TripFeedback() {
   const [error, setError] = useState("");
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingError, setRatingError] = useState("");
 
   useEffect(() => {
     api
@@ -44,11 +50,21 @@ export default function TripFeedback() {
     }
   }
 
+  async function handleRatingSubmit(e) {
+    e.preventDefault();
+    setRatingError("");
+    try {
+      await api.post(`/ratings/${tripId}`, { rating, review });
+      setRatingSubmitted(true);
+    } catch (err) {
+      setRatingError(err.response?.data?.error || "Could not submit rating");
+    }
+  }
+
   const distanceKm =
-  trip?.pickup_lat && trip?.dropoff_lat
-    ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng)
-    : null;
-    
+    trip?.pickup_lat && trip?.dropoff_lat
+      ? getDistanceKm(trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng)
+      : null;
 
   const durationMin =
     trip?.requested_at && trip?.completed_at
@@ -152,11 +168,45 @@ export default function TripFeedback() {
         )}
       </div>
 
+      {/* Driver rating */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-nirvaan-surface-high mx-4 mt-4">
+        <h3 className="font-bold text-nirvaan-dark mb-3">Rate Your Driver</h3>
+        {!ratingSubmitted ? (
+          <form onSubmit={handleRatingSubmit}>
+            {ratingError && <p className="text-nirvaan-primary text-sm mb-2 font-medium">{ratingError}</p>}
+            <div className="flex gap-2 justify-center mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button type="button" key={star} onClick={() => setRating(star)} className="p-1">
+                  <Star
+                    className={`w-8 h-8 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-nirvaan-outline-variant"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="Leave a review (optional)"
+              className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-2.5 mb-3 text-sm"
+              rows={3}
+            />
+            <button
+              type="submit"
+              disabled={rating === 0}
+              className="w-full bg-nirvaan-secondary text-white py-3 rounded-lg font-bold disabled:opacity-50"
+            >
+              Submit Rating
+            </button>
+          </form>
+        ) : (
+          <div className="bg-green-50 text-nirvaan-success text-sm rounded-lg p-3.5 font-medium text-center">
+            Thank you for your feedback!
+          </div>
+        )}
+      </div>
+
       <div className="text-center mt-5">
-        <button
-          onClick={() => navigate("/patient")}
-          className="text-sm text-nirvaan-secondary font-bold"
-        >
+        <button onClick={() => navigate("/patient")} className="text-sm text-nirvaan-secondary font-bold">
           Back to Home
         </button>
       </div>
