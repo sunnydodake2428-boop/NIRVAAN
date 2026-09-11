@@ -137,4 +137,20 @@ async function googleLogin(req, res) {
   }
 }
 
+// Admin: list all registered users
+async function getAllUsers(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, phone, role, created_at,
+         CASE WHEN phone LIKE '%@%' THEN 'Google' ELSE 'Phone' END AS signup_method
+       FROM users
+       ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+}
+
 module.exports = { signup, login, updateProfile, getProfile, googleLogin };

@@ -29,6 +29,8 @@ import DriverEditProfile from "./pages/driver/EditProfile";
 // Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import HospitalManagement from "./pages/admin/HospitalManagement";
+import AdminUsers from "./pages/admin/AdminUsers";
+
 
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
@@ -72,7 +74,7 @@ function App() {
           {/* Admin routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/hospitals" element={<ProtectedRoute allowedRole="admin"><HospitalManagement /></ProtectedRoute>} />
-
+           <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </ActiveTripProvider>

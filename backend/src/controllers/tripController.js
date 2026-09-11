@@ -88,8 +88,6 @@ async function getMyTrips(req, res) {
   }
 }
 
-
-
 // Submit price feedback after a trip
 async function submitPriceFeedback(req, res) {
   try {
@@ -171,15 +169,15 @@ async function getAdminStats(req, res) {
     const totalTrips = await pool.query("SELECT COUNT(*) FROM trips");
     const activeDrivers = await pool.query("SELECT COUNT(*) FROM drivers WHERE is_available = true");
     const recentTrips = await pool.query(
-  `SELECT trips.*, users.name AS caller_name,
-     CASE WHEN trips.accepted_at IS NOT NULL
-       THEN ROUND(EXTRACT(EPOCH FROM (trips.accepted_at - trips.requested_at)) / 60, 1)
-       ELSE NULL
-     END AS response_minutes
-   FROM trips
-   LEFT JOIN users ON trips.caller_id = users.id
-   ORDER BY trips.requested_at DESC LIMIT 10`
-);
+      `SELECT trips.*, users.name AS caller_name,
+         CASE WHEN trips.accepted_at IS NOT NULL
+           THEN ROUND(EXTRACT(EPOCH FROM (trips.accepted_at - trips.requested_at)) / 60, 1)
+           ELSE NULL
+         END AS response_minutes
+       FROM trips
+       LEFT JOIN users ON trips.caller_id = users.id
+       ORDER BY trips.requested_at DESC LIMIT 10`
+    );
     const avgResponse = await pool.query(
       `SELECT AVG(EXTRACT(EPOCH FROM (accepted_at - requested_at)) / 60) AS avg_minutes
        FROM trips WHERE accepted_at IS NOT NULL`
@@ -216,7 +214,6 @@ async function getPaymentHistory(req, res) {
     res.status(500).json({ error: "Failed to fetch payment history" });
   }
 }
-
 
 // Driver: earnings summary
 async function getDriverEarnings(req, res) {
