@@ -133,6 +133,7 @@ export default function AdminDashboard() {
                       <th className="pb-2 font-semibold">Patient</th>
                       <th className="pb-2 font-semibold">Status</th>
                       <th className="pb-2 font-semibold">Requested</th>
+                      <th className="pb-2 font-semibold">Driver Response Time</th>
                     </tr>
                   </thead>
                   <tbody>
