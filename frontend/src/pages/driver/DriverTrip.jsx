@@ -12,6 +12,7 @@ export default function DriverTrip() {
   const [sharing, setSharing] = useState(false);
   const [myLocation, setMyLocation] = useState(null);
   const [patientLocation, setPatientLocation] = useState(null);
+  const [locationError, setLocationError] = useState("");
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
 
@@ -27,15 +28,27 @@ export default function DriverTrip() {
   }, []);
 
   function startSharingLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation not supported on this device");
+      return;
+    }
     setSharing(true);
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMyLocation(loc);
+        setLocationError("");
         socketRef.current.emit("driver-location-update", { tripId, ...loc });
       },
-      (err) => console.error(err),
+      (err) => {
+        console.error(err);
+        setSharing(false);
+        setLocationError(
+          err.code === 1
+            ? "Location permission denied — enable it in browser settings"
+            : "Could not get your location"
+        );
+      },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
   }
@@ -50,18 +63,18 @@ export default function DriverTrip() {
     return () => stopSharingLocation();
   }, []);
 
- async function handleComplete() {
-  try {
-    await api.patch(`/trips/${tripId}/complete`, {
-      dropoff_lat: myLocation?.lat,
-      dropoff_lng: myLocation?.lng,
-    });
-    stopSharingLocation();
-    navigate("/driver");
-  } catch (err) {
-    console.error(err);
+  async function handleComplete() {
+    try {
+      await api.patch(`/trips/${tripId}/complete`, {
+        dropoff_lat: myLocation?.lat,
+        dropoff_lng: myLocation?.lng,
+      });
+      stopSharingLocation();
+      navigate("/driver");
+    } catch (err) {
+      console.error(err);
+    }
   }
-}
 
   const distanceKm =
     myLocation && patientLocation
@@ -81,19 +94,29 @@ export default function DriverTrip() {
         </span>
       </header>
 
+      {locationError && (
+        <p className="text-nirvaan-primary text-sm font-medium text-center py-2 bg-nirvaan-error-container">
+          {locationError}
+        </p>
+      )}
+
       <div style={{ height: "340px" }} className="relative z-0 p-2">
         <LiveMap userLocation={patientLocation} driverLocation={myLocation} height="100%" />
       </div>
 
-      {distanceKm && (
-        <div className="bg-nirvaan-primary text-white px-5 py-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm opacity-90 font-medium">To patient pickup</p>
-            <p className="text-2xl font-extrabold mt-0.5">{etaMinutes} mins</p>
-          </div>
-          <p className="text-lg font-bold">{distanceKm.toFixed(1)} km</p>
-        </div>
-      )}
+      <div className="bg-nirvaan-primary text-white px-5 py-4 flex items-center justify-between">
+        {distanceKm ? (
+          <>
+            <div>
+              <p className="text-sm opacity-90 font-medium">To patient pickup</p>
+              <p className="text-2xl font-extrabold mt-0.5">{etaMinutes} mins</p>
+            </div>
+            <p className="text-lg font-bold">{distanceKm.toFixed(1)} km</p>
+          </>
+        ) : (
+          <p className="text-sm opacity-90 font-medium">Waiting for your live location...</p>
+        )}
+      </div>
 
       <div className="bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.08)] p-5">
         <p className="text-sm text-nirvaan-outline font-semibold">Trip #{tripId}</p>

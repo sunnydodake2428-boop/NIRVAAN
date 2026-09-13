@@ -92,9 +92,11 @@ export default function LiveTracking() {
             <p className="text-2xl font-extrabold mt-0.5">
               {trip?.status === "completed" ? "Completed" : etaMinutes ? "Arriving in " + etaMinutes + " mins" : headingText}
             </p>
-            {distanceKm && trip?.status !== "completed" ? (
-              <p className="text-xs opacity-90 mt-1">{distanceKm.toFixed(1)} km away</p>
-            ) : null}
+           {trip?.status !== "completed" && (
+  <p className="text-xs opacity-90 mt-1">
+    {distanceKm ? `${distanceKm.toFixed(1)} km away` : "Waiting for driver's live location..."}
+  </p>
+)}
           </div>
           <span className="bg-nirvaan-success text-white text-xs font-bold px-3 py-1.5 rounded-full capitalize whitespace-nowrap">
             {trip?.status}
