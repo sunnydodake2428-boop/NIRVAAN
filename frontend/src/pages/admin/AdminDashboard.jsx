@@ -152,10 +152,10 @@ export default function AdminDashboard() {
                             {t.status}
                           </span>
                         </td>
-                        <td className="py-3 text-nirvaan-dark font-semibold">
+  <td className="py-3 text-nirvaan-outline">{new Date(t.requested_at).toLocaleString()}</td>
+<td className="py-3 text-nirvaan-dark font-semibold">
   {t.response_minutes ? `${t.response_minutes} min` : "—"}
 </td>
-                        <td className="py-3 text-nirvaan-outline">{new Date(t.requested_at).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
