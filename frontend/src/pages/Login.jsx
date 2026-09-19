@@ -40,20 +40,24 @@ export default function Login() {
     }
   }
 
-  async function handleGoogleSuccess(credentialResponse) {
-    setError("");
-    try {
-      const { data } = await api.post("/auth/google", {
-        credential: credentialResponse.credential,
-        role,
-      });
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.user.role);
-      navigate(`/${roleToPath[data.user.role] || "login"}`);
-    } catch (err) {
-      setError(err.response?.data?.error || "Google sign-in failed");
-    }
+ async function handleGoogleSuccess(credentialResponse) {
+  setError("");
+  if (mode === "signup" && !role) {
+    setError("Please select Patient or Driver first");
+    return;
   }
+  try {
+    const { data } = await api.post("/auth/google", {
+      credential: credentialResponse.credential,
+      role,
+    });
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.user.role);
+    navigate(`/${roleToPath[data.user.role] || "login"}`);
+  } catch (err) {
+    setError(err.response?.data?.error || "Google sign-in failed");
+  }
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-nirvaan-bg px-4 py-10">
@@ -104,13 +108,19 @@ export default function Login() {
           ))}
         </div>
 
-        {/* Google Sign-In */}
-        <div className="flex justify-center mb-5">
+               {/* Google Sign-In */}
+        <div className="flex justify-center mb-2">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={() => setError("Google sign-in failed")}
+            text={mode === "signup" ? "signup_with" : "signin_with"}
           />
         </div>
+        {mode === "signup" && (
+          <p className="text-xs text-nirvaan-outline text-center mb-5">
+            Signing up as <b>{role === "driver" ? "Driver" : "Patient"}</b> — select above if wrong
+          </p>
+        )}
 
         <div className="flex items-center gap-3 mb-5">
           <div className="flex-1 h-px bg-nirvaan-outline-variant" />
