@@ -155,4 +155,4 @@ async function getAllUsers(req, res) {
 
 
 
-module.exports = { signup, login, updateProfile, getProfile, googleLogin };
+module.exports = { signup, login, updateProfile, getProfile, googleLogin, getAllUsers };
