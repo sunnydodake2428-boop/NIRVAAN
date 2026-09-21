@@ -72,7 +72,7 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
             [userLocation.lng, userLocation.lat],
           ]
         : null);
-        console.log("Using route:", routeCoords ? "REAL ROAD ROUTE" : "STRAIGHT FALLBACK", coords?.length, "points");
+        
 
     if (!coords) {
       setSvgPoints("");
