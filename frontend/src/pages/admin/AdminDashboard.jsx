@@ -4,6 +4,7 @@ import api from "../../api/client";
 import {
   Ambulance,
   LayoutDashboard,
+  Users,
   History,
   Truck,
   Hospital,
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", active: true },
+    { icon: Users, label: "Users", href: "/admin/users" },
     { icon: History, label: "History" },
     { icon: Truck, label: "Fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
@@ -113,12 +115,12 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-white rounded-xl p-5 shadow-sm border border-nirvaan-surface-high">
                 <p className="text-xs text-nirvaan-outline font-semibold">Avg Response Time</p>
-<p className="text-3xl font-extrabold text-nirvaan-dark mt-1">
-  {stats.avg_response_minutes ? `${stats.avg_response_minutes} mins` : "— mins"}
-</p>
-{!stats.avg_response_minutes && (
-  <p className="text-xs text-nirvaan-outline mt-1">Calculated once enough trip data exists</p>
-)}
+                <p className="text-3xl font-extrabold text-nirvaan-dark mt-1">
+                  {stats.avg_response_minutes ? `${stats.avg_response_minutes} mins` : "— mins"}
+                </p>
+                {!stats.avg_response_minutes && (
+                  <p className="text-xs text-nirvaan-outline mt-1">Calculated once enough trip data exists</p>
+                )}
               </div>
             </div>
 
@@ -152,10 +154,10 @@ export default function AdminDashboard() {
                             {t.status}
                           </span>
                         </td>
-  <td className="py-3 text-nirvaan-outline">{new Date(t.requested_at).toLocaleString()}</td>
-<td className="py-3 text-nirvaan-dark font-semibold">
-  {t.response_minutes ? `${t.response_minutes} min` : "—"}
-</td>
+                        <td className="py-3 text-nirvaan-outline">{new Date(t.requested_at).toLocaleString()}</td>
+                        <td className="py-3 text-nirvaan-dark font-semibold">
+                          {t.response_minutes ? `${t.response_minutes} min` : "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
