@@ -3,7 +3,9 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { OAuth2Client } = require("google-auth-library");
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  "1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com";
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 async function signup(req, res) {
@@ -119,9 +121,14 @@ async function getProfile(req, res) {
   }
 }
 
+// Fast Google Login execution
 async function googleLogin(req, res) {
   try {
     const { credential, role } = req.body;
+    if (!credential) {
+      return res.status(400).json({ error: "Missing Google credential" });
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: GOOGLE_CLIENT_ID,
@@ -130,10 +137,11 @@ async function googleLogin(req, res) {
     const { email, name, picture } = payload;
 
     let userResult = await pool.query("SELECT * FROM users WHERE phone = $1", [email]);
-    let user;
+    let user = userResult.rows[0];
 
-    if (userResult.rows.length === 0) {
-      const password_hash = await bcrypt.hash(email + Date.now(), 10);
+    // Only hash password when creating a new user
+    if (!user) {
+      const password_hash = await bcrypt.hash(email + Date.now(), 8);
       const insertResult = await pool.query(
         `INSERT INTO users (name, phone, password_hash, role, avatar_url)
          VALUES ($1, $2, $3, $4, $5)
@@ -144,8 +152,6 @@ async function googleLogin(req, res) {
       if (user.role === "driver") {
         await pool.query("INSERT INTO drivers (user_id) VALUES ($1)", [user.id]);
       }
-    } else {
-      user = userResult.rows[0];
     }
 
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
@@ -164,7 +170,7 @@ async function googleLogin(req, res) {
     });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ error: "Google login failed" });
+    res.status(500).json({ error: "Google login failed: " + err.message });
   }
 }
 

@@ -1,7 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken, requireRole } = require("../middleware/authMiddleware");
-const { signup, login, updateProfile, getProfile, googleLogin } = require("../controllers/authController");
+const {
+  signup,
+  login,
+  updateProfile,
+  getProfile,
+  googleLogin,
+  getAllUsers, // <-- FIXED: Added missing import here
+} = require("../controllers/authController");
 
 router.post("/signup", signup);
 router.post("/login", login);
