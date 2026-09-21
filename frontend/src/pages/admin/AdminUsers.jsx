@@ -20,20 +20,41 @@ export default function AdminUsers() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    api.get("/auth/users").then((res) => setUsers(res.data)).catch(() => {}).finally(() => setLoading(false));
+    let isMounted = true;
+    api
+      .get("/auth/users")
+      .then((res) => {
+        if (isMounted) setUsers(res.data || []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch admin users:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filtered = filter === "all" ? users : users.filter((u) => u.role === filter);
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-    { icon: History, label: "History" },
-    { icon: Truck, label: "Fleet" },
+    { icon: History, label: "History", href: "/admin/history" },
+    { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
     { icon: Users, label: "Users", active: true },
-    { icon: BarChart3, label: "Analytics" },
-    { icon: Settings, label: "Settings" },
+    { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+    { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? "N/A" : parsed.toLocaleDateString();
+  };
 
   return (
     <div className="min-h-screen bg-nirvaan-bg flex">
@@ -44,11 +65,20 @@ export default function AdminUsers() {
         <nav className="space-y-1 flex-1">
           {navItems.map((item) =>
             item.href && !item.active ? (
-              <Link key={item.label} to={item.href} className="flex items-center gap-2.5 text-nirvaan-dark px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-nirvaan-surface">
+              <Link
+                key={item.label}
+                to={item.href}
+                className="flex items-center gap-2.5 text-nirvaan-dark px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-nirvaan-surface transition-colors"
+              >
                 <item.icon className="w-4 h-4" /> {item.label}
               </Link>
             ) : (
-              <div key={item.label} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold ${item.active ? "bg-nirvaan-secondary text-white" : "text-nirvaan-dark"}`}>
+              <div
+                key={item.label}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold ${
+                  item.active ? "bg-nirvaan-secondary text-white" : "text-nirvaan-dark"
+                }`}
+              >
                 <item.icon className="w-4 h-4" /> {item.label}
               </div>
             )
@@ -67,20 +97,28 @@ export default function AdminUsers() {
           </div>
           <div className="bg-white rounded-xl p-5 shadow-sm border border-nirvaan-surface-high">
             <p className="text-xs text-nirvaan-outline font-semibold">Patients</p>
-            <p className="text-3xl font-extrabold text-nirvaan-secondary mt-1">{users.filter((u) => u.role === "caller").length}</p>
+            <p className="text-3xl font-extrabold text-nirvaan-secondary mt-1">
+              {users.filter((u) => u.role === "caller").length}
+            </p>
           </div>
           <div className="bg-white rounded-xl p-5 shadow-sm border border-nirvaan-surface-high">
             <p className="text-xs text-nirvaan-outline font-semibold">Drivers</p>
-            <p className="text-3xl font-extrabold text-nirvaan-success mt-1">{users.filter((u) => u.role === "driver").length}</p>
+            <p className="text-3xl font-extrabold text-nirvaan-success mt-1">
+              {users.filter((u) => u.role === "driver").length}
+            </p>
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
           {["all", "caller", "driver", "admin"].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-full text-sm font-bold ${filter === f ? "bg-nirvaan-secondary text-white" : "bg-white border border-nirvaan-outline-variant text-nirvaan-dark"}`}
+              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+                filter === f
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-white border border-nirvaan-outline-variant text-nirvaan-dark hover:bg-nirvaan-surface"
+              }`}
             >
               {f === "all" ? "All" : f === "caller" ? "Patients" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
             </button>
@@ -96,38 +134,59 @@ export default function AdminUsers() {
                   <th className="px-4 py-3 font-semibold">Name</th>
                   <th className="px-4 py-3 font-semibold">Contact</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
-                  <th className="px-4 py-3 font-semibold">Signup</th>
+                  <th className="px-4 py-3 font-semibold">Signup Method</th>
                   <th className="px-4 py-3 font-semibold">Joined</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-nirvaan-outline">Loading...</td></tr>
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-nirvaan-outline">
+                      Loading registered users...
+                    </td>
+                  </tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-nirvaan-outline">No users found.</td></tr>
-                )}
-                {filtered.map((u) => (
-                  <tr key={u.id} className="border-b border-nirvaan-surface-high last:border-0">
-                    <td className="px-4 py-3 text-nirvaan-outline">#{u.id}</td>
-                    <td className="px-4 py-3 font-bold text-nirvaan-dark">{u.name}</td>
-                    <td className="px-4 py-3 text-nirvaan-outline flex items-center gap-1.5">
-                      {u.signup_method === "Google" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                      {u.phone}
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-nirvaan-outline">
+                      No users found.
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-nirvaan-surface text-nirvaan-secondary capitalize">
-                        {u.role === "caller" ? "Patient" : u.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${u.signup_method === "Google" ? "bg-red-50 text-nirvaan-primary" : "bg-green-50 text-nirvaan-success"}`}>
-                        {u.signup_method}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-nirvaan-outline">{new Date(u.created_at).toLocaleDateString()}</td>
                   </tr>
-                ))}
+                )}
+                {!loading &&
+                  filtered.map((u) => (
+                    <tr key={u.id} className="border-b border-nirvaan-surface-high last:border-0 hover:bg-gray-50/50">
+                      <td className="px-4 py-3 text-nirvaan-outline">#{u.id}</td>
+                      <td className="px-4 py-3 font-bold text-nirvaan-dark">{u.name || "N/A"}</td>
+                      <td className="px-4 py-3 text-nirvaan-outline">
+                        <div className="flex items-center gap-1.5">
+                          {u.signup_method === "Google" ? (
+                            <Mail className="w-3.5 h-3.5 text-nirvaan-primary shrink-0" />
+                          ) : (
+                            <Phone className="w-3.5 h-3.5 text-nirvaan-success shrink-0" />
+                          )}
+                          <span>{u.phone}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-nirvaan-surface text-nirvaan-secondary capitalize">
+                          {u.role === "caller" ? "Patient" : u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            u.signup_method === "Google"
+                              ? "bg-red-50 text-nirvaan-primary"
+                              : "bg-green-50 text-nirvaan-success"
+                          }`}
+                        >
+                          {u.signup_method}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-nirvaan-outline">{formatDate(u.created_at)}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
