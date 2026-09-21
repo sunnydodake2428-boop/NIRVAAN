@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import { ActiveTripProvider } from "./context/ActiveTripContext";
 import ActiveTripBar from "./components/ActiveTripBar";
-import AdminUsers from "./pages/admin/AdminUsers";
+
 // Patient
 import EmergencyContacts from "./pages/patient/EmergencyContacts";
 import PatientHome from "./pages/patient/PatientHome";
@@ -30,7 +30,6 @@ import DriverEditProfile from "./pages/driver/EditProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import AdminUsers from "./pages/admin/AdminUsers";
-<Route path="/admin/users" element={<AdminUsers />} />
 
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
@@ -74,7 +73,8 @@ function App() {
           {/* Admin routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/hospitals" element={<ProtectedRoute allowedRole="admin"><HospitalManagement /></ProtectedRoute>} />
-           <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </ActiveTripProvider>
