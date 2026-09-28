@@ -48,49 +48,49 @@ export default function PatientHome() {
   }
 
   return (
-    <div className="min-h-screen bg-nirvaan-bg pb-24 max-w-md mx-auto md:max-w-lg">
+    <div className="min-h-screen bg-nirvaan-bg pb-28 max-w-md mx-auto md:max-w-lg relative overflow-x-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-nirvaan-bg">
+      <header className="flex items-center justify-between px-4 py-4 bg-nirvaan-bg sticky top-0 z-20">
         <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-1.5">
           <Ambulance className="w-6 h-6" /> Nirvaan
         </h1>
-        <button className="bg-nirvaan-primary text-white text-sm font-bold px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm">
+        <button className="bg-nirvaan-primary text-white text-sm font-bold px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform min-h-[44px]">
           <PhoneCall className="w-4 h-4" /> Call Help
         </button>
       </header>
 
       {/* Emergency helpline banner */}
-      <div className="bg-nirvaan-error-container text-nirvaan-primary text-sm font-semibold text-center py-2.5 flex items-center justify-center gap-1.5">
-        <PhoneCall className="w-4 h-4" /> EMERGENCY HELPLINE:{" "}
-        <span className="underline font-bold">102</span>
+      <div className="bg-nirvaan-error-container text-nirvaan-primary text-sm font-semibold text-center py-2.5 px-4 flex items-center justify-center gap-1.5">
+        <PhoneCall className="w-4 h-4 shrink-0" /> 
+        <span>EMERGENCY HELPLINE: <span className="underline font-bold">102</span></span>
       </div>
 
       {/* Request Ambulance CTA */}
-      <div className="flex flex-col items-center mt-8 px-6">
+      <div className="flex flex-col items-center mt-6 px-4">
         <button
           onClick={handleRequest}
           disabled={requesting}
-          className="relative w-64 h-64 rounded-full bg-nirvaan-surface-highest flex items-center justify-center disabled:opacity-70"
+          className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full bg-nirvaan-surface-highest flex items-center justify-center disabled:opacity-70 active:scale-95 transition-transform"
         >
-          <span className="w-44 h-44 rounded-full bg-nirvaan-primary text-white flex flex-col items-center justify-center shadow-lg gap-1">
+          <span className="w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-nirvaan-primary text-white flex flex-col items-center justify-center shadow-lg gap-1">
             <MapPin className="w-7 h-7" />
-            <span className="text-xl font-extrabold tracking-tight">
+            <span className="text-lg sm:text-xl font-extrabold tracking-tight">
               {requesting ? "REQUESTING..." : "REQUEST"}
             </span>
-            {!requesting && <span className="text-sm font-medium">Ambulance</span>}
+            {!requesting && <span className="text-xs sm:text-sm font-medium">Ambulance</span>}
           </span>
         </button>
 
         <h2 className="text-2xl font-extrabold text-nirvaan-dark mt-6">Emergency Help</h2>
-        <p className="text-base text-nirvaan-outline text-center mt-1">
+        <p className="text-base text-nirvaan-outline text-center mt-1 max-w-xs">
           Get immediate medical assistance at your current location.
         </p>
-        {error && <p className="text-nirvaan-primary text-sm mt-2 text-center font-medium">{error}</p>}
+        {error && <p className="text-nirvaan-primary text-sm mt-2 text-center font-medium px-2">{error}</p>}
       </div>
 
       {/* Nearby ambulances & pricing */}
       <div className="px-4 mt-6">
-        <button className="w-full border-2 border-nirvaan-primary text-nirvaan-primary font-bold py-3.5 rounded-lg flex items-center justify-center gap-2">
+        <button className="w-full border-2 border-nirvaan-primary text-nirvaan-primary font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 min-h-[44px] active:bg-nirvaan-primary/5">
           <Ambulance className="w-4 h-4" /> Nearby Ambulances & Pricing
         </button>
       </div>
@@ -103,33 +103,33 @@ export default function PatientHome() {
 
       {/* Doctor consult + Find hospitals */}
       <div className="px-4 grid grid-cols-2 gap-3">
-        <button className="bg-nirvaan-surface text-nirvaan-secondary py-5 rounded-xl font-bold flex flex-col items-center gap-1.5 border border-nirvaan-surface-high">
+        <button className="bg-nirvaan-surface text-nirvaan-secondary py-4 rounded-xl font-bold flex flex-col items-center gap-1.5 border border-nirvaan-surface-high min-h-[72px]">
           <Stethoscope className="w-5 h-5" /> Doctor Call
         </button>
         <Link
           to="/patient/hospitals"
-          className="bg-nirvaan-surface text-nirvaan-success py-5 rounded-xl font-bold flex flex-col items-center gap-1.5 border border-nirvaan-surface-high"
+          className="bg-nirvaan-surface text-nirvaan-success py-4 rounded-xl font-bold flex flex-col items-center gap-1.5 border border-nirvaan-surface-high min-h-[72px] justify-center"
         >
           <PlusSquare className="w-5 h-5" /> Find Hospitals
         </Link>
       </div>
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-nirvaan-surface-high flex justify-around py-2.5 max-w-md mx-auto md:max-w-lg">
-        <Link to="/patient" className="flex flex-col items-center gap-0.5 text-nirvaan-secondary text-xs font-semibold">
-          <span className="w-9 h-9 rounded-full bg-nirvaan-secondary text-white flex items-center justify-center"><Home className="w-4 h-4" /></span>
+      {/* Mobile-optimized bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-nirvaan-surface-high flex justify-around items-center py-2 z-30 max-w-md mx-auto md:max-w-lg shadow-lg">
+        <Link to="/patient" className="flex flex-col items-center gap-0.5 text-nirvaan-secondary text-xs font-semibold min-w-[56px]">
+          <span className="w-8 h-8 rounded-full bg-nirvaan-secondary text-white flex items-center justify-center"><Home className="w-4 h-4" /></span>
           Home
         </Link>
-        <Link to="/patient/ai" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium">
-          <span className="w-9 h-9 flex items-center justify-center"><Bot className="w-5 h-5" /></span>
+        <Link to="/patient/ai" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium min-w-[56px]">
+          <span className="w-8 h-8 flex items-center justify-center"><Bot className="w-5 h-5" /></span>
           AI Assistant
         </Link>
-        <Link to="/patient/history" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium">
-          <span className="w-9 h-9 flex items-center justify-center"><History className="w-5 h-5" /></span>
+        <Link to="/patient/history" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium min-w-[56px]">
+          <span className="w-8 h-8 flex items-center justify-center"><History className="w-5 h-5" /></span>
           History
         </Link>
-        <Link to="/patient/profile" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium">
-          <span className="w-9 h-9 flex items-center justify-center"><User className="w-5 h-5" /></span>
+        <Link to="/patient/profile" className="flex flex-col items-center gap-0.5 text-nirvaan-outline text-xs font-medium min-w-[56px]">
+          <span className="w-8 h-8 flex items-center justify-center"><User className="w-5 h-5" /></span>
           Profile
         </Link>
       </nav>

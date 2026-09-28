@@ -62,8 +62,6 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
     const map = mapRef.current.getMap();
     if (!map) return;
 
-  
-  
     const coords =
       routeCoords ||
       (userLocation && driverLocation
@@ -72,7 +70,6 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
             [userLocation.lng, userLocation.lat],
           ]
         : null);
-        
 
     if (!coords) {
       setSvgPoints("");
@@ -89,14 +86,14 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
   }, [routeCoords, userLocation?.lat, userLocation?.lng, driverLocation?.lat, driverLocation?.lng]);
 
   useEffect(() => {
-  if (!loaded || !mapRef.current) return;
-  const map = mapRef.current.getMap();
-  updateSvgLine();
-  map.on("render", updateSvgLine);
-  return () => {
-    map.off("render", updateSvgLine);
-  };
-}, [loaded, updateSvgLine]);
+    if (!loaded || !mapRef.current) return;
+    const map = mapRef.current.getMap();
+    updateSvgLine();
+    map.on("render", updateSvgLine);
+    return () => {
+      map.off("render", updateSvgLine);
+    };
+  }, [loaded, updateSvgLine]);
 
   useEffect(() => {
     if (!loaded || !mapRef.current) return;
@@ -116,8 +113,8 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
 
   return (
     <div
-      style={{ height, width: "100%", minHeight: "300px", position: "relative" }}
-      className="rounded-xl overflow-hidden shadow-sm border border-nirvaan-surface-high"
+      style={{ height, width: "100%", minHeight: "280px", position: "relative" }}
+      className="rounded-xl overflow-hidden shadow-sm border border-nirvaan-surface-high touch-pan-x touch-pan-y"
     >
       <Map
         ref={mapRef}
@@ -145,7 +142,7 @@ export default function LiveMap({ userLocation, driverLocation, height = "340px"
         )}
       </Map>
 
-      {/* Plain SVG overlay for the route line — bypasses WebGL rendering entirely */}
+      {/* Plain SVG overlay for the route line */}
       {svgPoints && (
         <svg
           style={{

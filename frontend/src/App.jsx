@@ -30,6 +30,12 @@ import DriverEditProfile from "./pages/driver/EditProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import AdminUsers from "./pages/admin/AdminUsers";
+import FleetManagement from "./pages/admin/FleetManagement";
+import Analytics from "./pages/admin/Analytics";
+import History from "./pages/admin/History";
+import Fleet from "./pages/admin/Fleet";
+import Settings from "./pages/admin/Settings";
+import Reports from "./pages/admin/Reports";
 
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
@@ -74,7 +80,13 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/hospitals" element={<ProtectedRoute allowedRole="admin"><HospitalManagement /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/fleet" element={<ProtectedRoute allowedRole="admin"><Fleet /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute allowedRole="admin"><Analytics /></ProtectedRoute>} />
+          <Route path="/admin/history" element={<ProtectedRoute allowedRole="admin"><History /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute allowedRole="admin"><Settings /></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><Reports /></ProtectedRoute>} />
 
+          {/* Catch-all route */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </ActiveTripProvider>
