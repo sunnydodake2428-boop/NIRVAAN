@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import { ActiveTripProvider } from "./context/ActiveTripContext";
 import ActiveTripBar from "./components/ActiveTripBar";
-import AdminLayout from "./components/AdminLayout";
 
 // Patient
 import EmergencyContacts from "./pages/patient/EmergencyContacts";
@@ -28,14 +27,15 @@ import DriverAI from "./pages/driver/DriverAI";
 import DriverEditProfile from "./pages/driver/EditProfile";
 
 // Admin
+import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import HospitalManagement from "./pages/admin/HospitalManagement";
 import AdminUsers from "./pages/admin/AdminUsers";
-import Analytics from "./pages/admin/Analytics";
 import History from "./pages/admin/History";
 import Fleet from "./pages/admin/Fleet";
-import Settings from "./pages/admin/Settings";
+import HospitalManagement from "./pages/admin/HospitalManagement";
+import Analytics from "./pages/admin/Analytics";
 import Reports from "./pages/admin/Reports";
+import Settings from "./pages/admin/Settings";
 
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
