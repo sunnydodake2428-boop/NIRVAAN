@@ -80,7 +80,7 @@ export default function HospitalManagement() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-start justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
             Hospital Management
@@ -91,7 +91,7 @@ export default function HospitalManagement() {
         </div>
         <button
           onClick={fetchHospitals}
-          className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
+          className="p-2 shrink-0 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
           title="Refresh List"
         >
           <RefreshCw className="w-4 h-4" />

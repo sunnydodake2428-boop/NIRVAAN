@@ -1,290 +1,137 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/client";
-import {
-  Ambulance,
-  LayoutDashboard,
-  Users,
-  History,
-  Truck,
-  Hospital,
-  BarChart3,
-  FileSpreadsheet,
-  Settings,
-  Download,
-  FileText,
-  Filter,
-} from "lucide-react";
+import { Save } from "lucide-react";
 
-export default function Reports() {
-  const [startDate, setStartDate] = useState("2026-09-01");
-  const [endDate, setEndDate] = useState("2026-09-28");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [exportFormat, setExportFormat] = useState("csv");
-  const [downloading, setDownloading] = useState(false);
+// NOTE: no sidebar / header / <main> here. AdminLayout already provides them.
+export default function Settings() {
+  const [orgName, setOrgName] = useState("Nirvaan Ambulance Services");
+  const [supportPhone, setSupportPhone] = useState("112");
+  const [supportEmail, setSupportEmail] = useState("");
+  const [searchRadiusKm, setSearchRadiusKm] = useState(10);
+  const [autoAssign, setAutoAssign] = useState(true);
+  const [smsAlerts, setSmsAlerts] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const sampleReportData = [
-    { id: "REQ-9041", date: "2026-09-28", patient: "Rahul Sharma", hospital: "Sassoon Hospital", responseTime: "7.2 mins", status: "Completed" },
-    { id: "REQ-9040", date: "2026-09-28", patient: "Ananya Deshmukh", hospital: "Sahyadri Hospital", responseTime: "9.1 mins", status: "Completed" },
-    { id: "REQ-9039", date: "2026-09-28", patient: "Suresh Patil", hospital: "Noble Hospital", responseTime: "N/A", status: "Cancelled" },
-    { id: "REQ-9038", date: "2026-09-27", patient: "Priya Kulkarni", hospital: "Ruby Hall Clinic", responseTime: "6.8 mins", status: "Completed" },
-  ];
-
-  function convertToCSV(data) {
-    if (!data || !data.length) return "";
-    const headers = Object.keys(data[0]).join(",");
-    const rows = data.map((row) =>
-      Object.values(row)
-        .map((val) => `"${val}"`)
-        .join(",")
-    );
-    return [headers, ...rows].join("\n");
-  }
-
-  async function handleDownload(e) {
+  async function handleSave(e) {
     e.preventDefault();
-    setDownloading(true);
-
+    setSaving(true);
+    setMessage("");
+    setError("");
     try {
-      const response = await api.get("/admin/reports/download", {
-        params: { startDate, endDate, category: categoryFilter, format: exportFormat },
-        responseType: "blob",
+      await api.put("/admin/settings", {
+        orgName,
+        supportPhone,
+        supportEmail,
+        searchRadiusKm: Number(searchRadiusKm),
+        autoAssign,
+        smsAlerts,
+        emailAlerts,
       });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `nirvaan_report_${startDate}_to_${endDate}.${exportFormat}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      setMessage("Settings saved.");
     } catch (err) {
-      let fileContent = "";
-      let mimeType = "";
-
-      if (exportFormat === "csv") {
-        fileContent = convertToCSV(sampleReportData);
-        mimeType = "text/csv;charset=utf-8;";
-      } else {
-        fileContent = JSON.stringify(sampleReportData, null, 2);
-        mimeType = "application/json";
-      }
-
-      const blob = new Blob([fileContent], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `nirvaan_dispatch_report_${startDate}_to_${endDate}.${exportFormat}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      setError(err.response?.data?.error || "Could not save settings. Please try again.");
     } finally {
-      setDownloading(false);
+      setSaving(false);
     }
   }
 
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-    { icon: Users, label: "Users", href: "/admin/users" },
-    { icon: History, label: "History", href: "/admin/history" },
-    { icon: Truck, label: "Fleet", href: "/admin/fleet" },
-    { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
-    { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-    { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports", active: true },
-    { icon: Settings, label: "Settings", href: "/admin/settings" },
-  ];
+  const inputClass =
+    "w-full border border-nirvaan-outline-variant rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none";
+
+  const Toggle = ({ checked, onChange, label, hint }) => (
+    <label className="flex items-center justify-between gap-4 py-2 cursor-pointer">
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold text-nirvaan-dark">{label}</span>
+        {hint && <span className="block text-[11px] text-nirvaan-outline">{hint}</span>}
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-4 h-4 accent-nirvaan-secondary shrink-0"
+      />
+    </label>
+  );
 
   return (
-    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
-      {/* Mobile Top Navigation Header */}
-      <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
-        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
-          <Ambulance className="w-6 h-6" /> Nirvaan
-        </h1>
-        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                item.active
-                  ? "bg-nirvaan-secondary text-white"
-                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </header>
+    <div className="w-full">
+      <div className="mb-6">
+        <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">Settings</h2>
+        <p className="text-sm text-nirvaan-outline">
+          Manage organization details, dispatch rules, and alerts.
+        </p>
+      </div>
 
-      {/* Desktop Left Sidebar */}
-      <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0">
-        <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
-          <Ambulance className="w-6 h-6" /> Nirvaan
-        </h1>
-        <nav className="space-y-1 flex-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                item.active
-                  ? "bg-nirvaan-secondary text-white"
-                  : "text-nirvaan-dark hover:bg-nirvaan-surface"
-              }`}
-            >
-              <item.icon className="w-4 h-4" /> {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-6 max-w-5xl overflow-y-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
-            Export Operational Reports
-          </h2>
-          <p className="text-sm text-nirvaan-outline">
-            Generate and download formatted data logs for audit and performance reviews.
+      <form onSubmit={handleSave} className="space-y-6 max-w-3xl">
+        {message && (
+          <p className="text-xs text-green-700 bg-green-50 p-3 rounded-lg font-medium border border-green-200">
+            {message}
           </p>
-        </div>
+        )}
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg font-medium border border-red-200">
+            {error}
+          </p>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Settings Panel */}
-          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-1">
-            <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-1.5">
-              <Filter className="w-4 h-4 text-nirvaan-secondary" /> Report Filters
-            </h3>
-
-            <form onSubmit={handleDownload} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
-                  From Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
-                  To Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
-                  Request Status Filter
-                </label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none bg-white"
-                >
-                  <option value="all">All Dispatches</option>
-                  <option value="completed">Completed Transports</option>
-                  <option value="cancelled">Cancelled Calls</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
-                  Export Format
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setExportFormat("csv")}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 ${
-                      exportFormat === "csv"
-                        ? "bg-nirvaan-secondary text-white border-nirvaan-secondary"
-                        : "bg-white border-nirvaan-outline-variant text-nirvaan-dark"
-                    }`}
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExportFormat("json")}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 ${
-                      exportFormat === "json"
-                        ? "bg-nirvaan-secondary text-white border-nirvaan-secondary"
-                        : "bg-white border-nirvaan-outline-variant text-nirvaan-dark"
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" /> JSON
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={downloading}
-                className="w-full mt-2 bg-nirvaan-secondary text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 transition-opacity"
-              >
-                <Download className="w-4 h-4" /> {downloading ? "Generating..." : "Download File"}
-              </button>
-            </form>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-2">
-            <h3 className="text-sm font-bold text-nirvaan-dark mb-1">Export Data Preview</h3>
-            <p className="text-xs text-nirvaan-outline mb-4">
-              Showing preview of records matching period: <span className="font-semibold text-nirvaan-dark">{startDate}</span> to <span className="font-semibold text-nirvaan-dark">{endDate}</span>
-            </p>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-nirvaan-surface-high text-nirvaan-outline font-bold">
-                    <th className="py-2 px-2">ID</th>
-                    <th className="py-2 px-2">Date</th>
-                    <th className="py-2 px-2">Patient</th>
-                    <th className="py-2 px-2">Hospital</th>
-                    <th className="py-2 px-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-nirvaan-surface-high text-nirvaan-dark font-medium">
-                  {sampleReportData.map((row) => (
-                    <tr key={row.id}>
-                      <td className="py-2.5 px-2 font-extrabold text-nirvaan-primary">{row.id}</td>
-                      <td className="py-2.5 px-2 text-gray-500">{row.date}</td>
-                      <td className="py-2.5 px-2">{row.patient}</td>
-                      <td className="py-2.5 px-2 text-nirvaan-secondary">{row.hospital}</td>
-                      <td className="py-2.5 px-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            row.status === "Completed"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-red-50 text-red-600"
-                          }`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <section className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
+          <h3 className="text-sm font-bold text-nirvaan-dark mb-4">Organization</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-nirvaan-dark block mb-1">Organization name</label>
+              <input className={inputClass} value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-nirvaan-dark block mb-1">Support phone</label>
+              <input className={inputClass} value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-nirvaan-dark block mb-1">Support email</label>
+              <input type="email" className={inputClass} value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
             </div>
           </div>
-        </div>
-      </main>
+        </section>
+
+        <section className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
+          <h3 className="text-sm font-bold text-nirvaan-dark mb-4">Dispatch rules</h3>
+          <div className="mb-3 max-w-xs">
+            <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
+              Driver search radius (km)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              className={inputClass}
+              value={searchRadiusKm}
+              onChange={(e) => setSearchRadiusKm(e.target.value)}
+            />
+          </div>
+          <Toggle
+            checked={autoAssign}
+            onChange={setAutoAssign}
+            label="Auto-assign nearest ambulance"
+            hint="Send new requests to the closest available driver first."
+          />
+        </section>
+
+        <section className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
+          <h3 className="text-sm font-bold text-nirvaan-dark mb-2">Alerts</h3>
+          <Toggle checked={smsAlerts} onChange={setSmsAlerts} label="SMS alerts" hint="Notify admins about unassigned or cancelled requests." />
+          <Toggle checked={emailAlerts} onChange={setEmailAlerts} label="Email summaries" hint="Receive a daily operations summary." />
+        </section>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="bg-nirvaan-secondary text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 disabled:opacity-50"
+        >
+          <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save changes"}
+        </button>
+      </form>
     </div>
   );
 }

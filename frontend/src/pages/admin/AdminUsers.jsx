@@ -60,7 +60,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Filter Pills */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none touch-pan-x">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
         {["all", "caller", "driver", "admin"].map((f) => (
           <button
             key={f}

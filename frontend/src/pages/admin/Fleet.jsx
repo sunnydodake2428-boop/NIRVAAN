@@ -1,276 +1,201 @@
 import { useState, useEffect } from "react";
 import api from "../../api/client";
 import {
-  Plus,
-  Phone,
-  Radio,
+  Search,
   CheckCircle2,
-  Wrench,
+  XCircle,
+  Clock,
+  MapPin,
+  Phone,
   RefreshCw,
 } from "lucide-react";
 
-export default function Fleet() {
-  const [fleet, setFleet] = useState([]);
+export default function History() {
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const [vehicleCode, setVehicleCode] = useState("");
-  const [driverName, setDriverName] = useState("");
-  const [driverPhone, setDriverPhone] = useState("");
-  const [type, setType] = useState("BLS (Basic)");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-
-  const mockFleet = [
+  const mockHistory = [
     {
-      id: "1",
-      code: "AMB-101",
-      driver_name: "Ramesh Shinde",
-      driver_phone: "+91 98220 11111",
-      type: "ALS (Advanced)",
-      status: "available",
-      current_location: "Kothrud Depot",
+      id: "REQ-9041",
+      patient_name: "Rahul Sharma",
+      contact: "+91 98230 11223",
+      pickup_address: "Kothrud, Pune",
+      hospital_name: "Sassoon Hospital",
+      ambulance_code: "AMB-102",
+      status: "completed",
+      created_at: "2026-09-28T14:30:00Z",
     },
     {
-      id: "2",
-      code: "AMB-102",
-      driver_name: "Sanjay Pawar",
-      driver_phone: "+91 98220 22222",
-      type: "BLS (Basic)",
-      status: "busy",
-      current_location: "En route to Sassoon Hospital",
+      id: "REQ-9040",
+      patient_name: "Ananya Deshmukh",
+      contact: "+91 91580 44321",
+      pickup_address: "Viman Nagar, Pune",
+      hospital_name: "Sahyadri Hospital",
+      ambulance_code: "AMB-105",
+      status: "completed",
+      created_at: "2026-09-28T12:15:00Z",
     },
     {
-      id: "3",
-      code: "AMB-103",
-      driver_name: "Vikram Jagtap",
-      driver_phone: "+91 98220 33333",
-      type: "BLS (Basic)",
-      status: "maintenance",
-      current_location: "Service Station - Hadapsar",
+      id: "REQ-9039",
+      patient_name: "Suresh Patil",
+      contact: "+91 97654 88990",
+      pickup_address: "Hadapsar, Pune",
+      hospital_name: "Noble Hospital",
+      ambulance_code: "AMB-101",
+      status: "cancelled",
+      created_at: "2026-09-28T10:05:00Z",
+    },
+    {
+      id: "REQ-9038",
+      patient_name: "Priya Kulkarni",
+      contact: "+91 94220 55667",
+      pickup_address: "Shivajinagar, Pune",
+      hospital_name: "Ruby Hall Clinic",
+      ambulance_code: "AMB-108",
+      status: "completed",
+      created_at: "2026-09-27T18:45:00Z",
     },
   ];
 
   useEffect(() => {
-    fetchFleet();
+    fetchHistory();
   }, []);
 
-  async function fetchFleet() {
+  async function fetchHistory() {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/fleet");
-      setFleet(data.length > 0 ? data : mockFleet);
+      const { data } = await api.get("/admin/history");
+      setHistory(data.length > 0 ? data : mockHistory);
     } catch (err) {
-      console.log("Using mock fleet data");
-      setFleet(mockFleet);
+      console.log("Using fallback history data:", err);
+      setHistory(mockHistory);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAddVehicle(e) {
-    e.preventDefault();
-    setError("");
-    setMessage("");
+  const filteredHistory = history.filter((item) => {
+    const matchesSearch =
+      (item.patient_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.pickup_address || "").toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus =
+      statusFilter === "all" || item.status?.toLowerCase() === statusFilter;
 
-    try {
-      await api.post("/admin/fleet", {
-        code: vehicleCode,
-        driver_name: driverName,
-        driver_phone: driverPhone,
-        type,
-      });
-      setMessage("Vehicle added to active fleet.");
-      setVehicleCode("");
-      setDriverName("");
-      setDriverPhone("");
-      setShowAddModal(false);
-      fetchFleet();
-    } catch (err) {
-      const newVeh = {
-        id: Date.now().toString(),
-        code: vehicleCode,
-        driver_name: driverName,
-        driver_phone: driverPhone,
-        type,
-        status: "available",
-        current_location: "Base Station",
-      };
-      setFleet((prev) => [newVeh, ...prev]);
-      setMessage("Vehicle added successfully.");
-      setVehicleCode("");
-      setDriverName("");
-      setDriverPhone("");
-      setShowAddModal(false);
-    }
-  }
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-start justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
-            Fleet Management
+            Dispatch History Logs
           </h2>
           <p className="text-sm text-nirvaan-outline">
-            Monitor ambulance readiness, assign drivers, and manage active response units.
+            Review completed and past emergency dispatch records across your network.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchFleet}
-            className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
-            title="Refresh Fleet"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-          <button
-            onClick={() => setShowAddModal(!showAddModal)}
-            className="bg-nirvaan-secondary text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm hover:opacity-95 transition-opacity"
-          >
-            <Plus className="w-4 h-4" /> Add Vehicle
-          </button>
+        <button
+          onClick={fetchHistory}
+          className="p-2 shrink-0 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
+          title="Refresh History"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {/* Search Bar & Filters */}
+      <div className="bg-white p-4 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search ID, patient, or pickup area..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 border border-nirvaan-outline-variant rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
+          />
+        </div>
+
+        <div className="flex gap-2 w-full sm:w-auto">
+          {["all", "completed", "cancelled"].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+                statusFilter === st
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-nirvaan-surface text-nirvaan-dark hover:bg-gray-200"
+              }`}
+            >
+              {st}
+            </button>
+          ))}
         </div>
       </div>
 
-      {message && (
-        <p className="text-xs text-green-700 bg-green-50 p-3 rounded-lg mb-4 font-medium border border-green-200">
-          {message}
-        </p>
-      )}
+      {/* History Log List */}
+      <div className="bg-white rounded-xl border border-nirvaan-surface-high shadow-sm overflow-hidden">
+        {loading ? (
+          <p className="p-6 text-xs text-nirvaan-outline text-center">Loading dispatch logs...</p>
+        ) : filteredHistory.length === 0 ? (
+          <p className="p-6 text-xs text-nirvaan-outline text-center">
+            No history logs found matching your filter criteria.
+          </p>
+        ) : (
+          <div className="divide-y divide-nirvaan-surface-high">
+            {filteredHistory.map((item) => (
+              <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="font-extrabold text-xs text-nirvaan-primary">{item.id}</span>
+                    <span className="text-xs font-bold text-nirvaan-dark">{item.patient_name}</span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      ({new Date(item.created_at).toLocaleString()})
+                    </span>
+                  </div>
 
-      {/* Add Vehicle Form Modal */}
-      {showAddModal && (
-        <form
-          onSubmit={handleAddVehicle}
-          className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 max-w-xl"
-        >
-          <h3 className="text-sm font-bold text-nirvaan-dark mb-3">Register New Ambulance</h3>
-          {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="text-[11px] font-semibold text-nirvaan-dark block mb-1">
-                Vehicle Identifier Code
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. AMB-106"
-                required
-                value={vehicleCode}
-                onChange={(e) => setVehicleCode(e.target.value)}
-                className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-              />
-            </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-nirvaan-outline">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      {item.pickup_address}
+                    </span>
+                    {item.contact && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        {item.contact}
+                      </span>
+                    )}
+                  </div>
 
-            <div>
-              <label className="text-[11px] font-semibold text-nirvaan-dark block mb-1">
-                Vehicle Class
-              </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none bg-white"
-              >
-                <option value="BLS (Basic)">BLS (Basic Life Support)</option>
-                <option value="ALS (Advanced)">ALS (Advanced Cardiac)</option>
-                <option value="Patient Transport">Patient Transport</option>
-              </select>
-            </div>
+                  <div className="text-xs text-nirvaan-dark font-medium">
+                    Hospital: <span className="text-nirvaan-secondary font-semibold">{item.hospital_name || "N/A"}</span> • Unit: <span className="font-mono text-xs">{item.ambulance_code || "N/A"}</span>
+                  </div>
+                </div>
 
-            <div>
-              <label className="text-[11px] font-semibold text-nirvaan-dark block mb-1">
-                Assigned Driver Name
-              </label>
-              <input
-                type="text"
-                placeholder="Full Name"
-                required
-                value={driverName}
-                onChange={(e) => setDriverName(e.target.value)}
-                className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-nirvaan-dark block mb-1">
-                Driver Contact Phone
-              </label>
-              <input
-                type="text"
-                placeholder="+91..."
-                required
-                value={driverPhone}
-                onChange={(e) => setDriverPhone(e.target.value)}
-                className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setShowAddModal(false)}
-              className="px-3 py-1.5 text-xs font-bold text-nirvaan-dark hover:bg-nirvaan-surface rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-1.5 text-xs font-bold bg-nirvaan-secondary text-white rounded-lg"
-            >
-              Save Vehicle
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Fleet Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {fleet.map((veh) => (
-          <div
-            key={veh.id}
-            className="bg-white rounded-xl border border-nirvaan-surface-high p-4 shadow-sm flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-extrabold text-nirvaan-primary text-base">
-                  {veh.code}
-                </span>
-                {veh.status === "available" ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" /> Available
-                  </span>
-                ) : veh.status === "busy" ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
-                    <Radio className="w-3 h-3 animate-pulse text-amber-600" /> On Request
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                    <Wrench className="w-3 h-3" /> Maintenance
-                  </span>
-                )}
+                <div className="shrink-0 flex items-center gap-2">
+                  {item.status?.toLowerCase() === "completed" ? (
+                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Completed
+                    </span>
+                  ) : item.status?.toLowerCase() === "cancelled" ? (
+                    <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <XCircle className="w-3.5 h-3.5" /> Cancelled
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <Clock className="w-3.5 h-3.5" /> {item.status}
+                    </span>
+                  )}
+                </div>
               </div>
-
-              <p className="text-xs font-semibold text-nirvaan-dark mb-1">{veh.type}</p>
-              <p className="text-xs text-nirvaan-outline mb-3">
-                Station: <span className="text-nirvaan-dark font-medium">{veh.current_location}</span>
-              </p>
-            </div>
-
-            <div className="border-t border-nirvaan-surface-high pt-3 mt-2 flex items-center justify-between text-xs">
-              <div>
-                <p className="font-bold text-nirvaan-dark">{veh.driver_name}</p>
-                <a
-                  href={`tel:${veh.driver_phone}`}
-                  className="text-nirvaan-secondary font-medium flex items-center gap-1 hover:underline"
-                >
-                  <Phone className="w-3 h-3" /> {veh.driver_phone}
-                </a>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

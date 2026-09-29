@@ -90,7 +90,7 @@ export default function History() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-start justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
             Dispatch History Logs
@@ -101,7 +101,7 @@ export default function History() {
         </div>
         <button
           onClick={fetchHistory}
-          className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
+          className="p-2 shrink-0 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
           title="Refresh History"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -109,7 +109,7 @@ export default function History() {
       </div>
 
       {/* Search Bar & Filters */}
-      <div className="bg-white p-4 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -150,8 +150,8 @@ export default function History() {
           <div className="divide-y divide-nirvaan-surface-high">
             {filteredHistory.map((item) => (
               <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="font-extrabold text-xs text-nirvaan-primary">{item.id}</span>
                     <span className="text-xs font-bold text-nirvaan-dark">{item.patient_name}</span>
                     <span className="text-[10px] text-gray-400 font-mono">

@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   FileText,
   Filter,
+  Download,
 } from "lucide-react";
 
 export default function Reports() {
@@ -166,11 +167,54 @@ export default function Reports() {
             <button
               type="submit"
               disabled={downloading}
-              className="w-full bg-nirvaan-secondary text-white py-2.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-95 transition-opacity disabled:opacity-50"
+              className="w-full mt-2 bg-nirvaan-secondary text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 transition-opacity disabled:opacity-50"
             >
-              {downloading ? "Generating Export..." : "Download File"}
+              <Download className="w-4 h-4" /> {downloading ? "Generating..." : "Download File"}
             </button>
           </form>
+        </div>
+
+        {/* Preview Panel */}
+        <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-2 min-w-0">
+          <h3 className="text-sm font-bold text-nirvaan-dark mb-1">Export Data Preview</h3>
+          <p className="text-xs text-nirvaan-outline mb-4">
+            Showing preview of records matching period:{" "}
+            <span className="font-semibold text-nirvaan-dark">{startDate}</span> to{" "}
+            <span className="font-semibold text-nirvaan-dark">{endDate}</span>
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse min-w-[460px]">
+              <thead>
+                <tr className="border-b border-nirvaan-surface-high text-nirvaan-outline font-bold">
+                  <th className="py-2 px-2">ID</th>
+                  <th className="py-2 px-2">Date</th>
+                  <th className="py-2 px-2">Patient</th>
+                  <th className="py-2 px-2">Hospital</th>
+                  <th className="py-2 px-2">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-nirvaan-surface-high text-nirvaan-dark font-medium">
+                {sampleReportData.map((row) => (
+                  <tr key={row.id}>
+                    <td className="py-2.5 px-2 font-extrabold text-nirvaan-primary">{row.id}</td>
+                    <td className="py-2.5 px-2 text-gray-500">{row.date}</td>
+                    <td className="py-2.5 px-2">{row.patient}</td>
+                    <td className="py-2.5 px-2 text-nirvaan-secondary">{row.hospital}</td>
+                    <td className="py-2.5 px-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          row.status === "Completed" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+                        }`}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -43,23 +43,25 @@ export default function AdminDashboard() {
       alert("No trip data available to export.");
       return;
     }
-    let csvContent = "data:text/csv;charset=utf-8,Patient,Status,Requested,ResponseTime\n";
-    recentTrips.forEach((t) => {
-      csvContent += `${t.patient || "N/A"},${t.status || "Completed"},${t.date || "N/A"},${t.time || "0 min"}\n`;
-    });
-    const encodedUri = encodeURI(csvContent);
+    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = recentTrips.map((t) =>
+      [t.patient || "N/A", t.status || "Completed", t.date || "N/A", t.time || "0 min"].map(q).join(",")
+    );
+    const csv = ["Patient,Status,Requested,ResponseTime", ...rows].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "nirvaan_operations_report.csv");
+    link.href = url;
+    link.download = "nirvaan_operations_report.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-6">
       {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-nirvaan-dark">Operations Overview</h2>
           <p className="text-xs md:text-sm text-nirvaan-outline">
@@ -83,7 +85,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
           <p className="text-xs font-semibold text-nirvaan-outline mb-1">Total Trips</p>
           <p className="text-3xl font-extrabold text-nirvaan-dark">{stats.totalTrips}</p>

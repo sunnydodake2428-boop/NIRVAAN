@@ -36,7 +36,7 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
             Response & Operations Analytics
@@ -47,7 +47,7 @@ export default function Analytics() {
         </div>
         <button
           onClick={fetchAnalytics}
-          className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
+          className="p-2 shrink-0 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
           title="Refresh Analytics"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
