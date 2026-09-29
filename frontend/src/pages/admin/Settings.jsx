@@ -1,63 +1,125 @@
-// frontend/src/pages/admin/Settings.jsx
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/client";
 import {
   Ambulance,
   LayoutDashboard,
+  Users,
   History,
   Truck,
   Hospital,
   BarChart3,
-  Settings as SettingsIcon,
-  Save,
-  Bell,
-  Shield,
-  Sliders,
+  FileSpreadsheet,
+  Settings,
+  Download,
+  FileText,
+  Filter,
 } from "lucide-react";
 
-export default function Settings() {
-  const [autoDispatch, setAutoDispatch] = useState(true);
-  const [maxRadiusKm, setMaxRadiusKm] = useState(15);
-  const [emergencyHotline, setEmergencyHotline] = useState("+91 1800 123 4567");
-  const [smsAlerts, setSmsAlerts] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(false);
-  const [savedMessage, setSavedMessage] = useState("");
+export default function Reports() {
+  const [startDate, setStartDate] = useState("2026-09-01");
+  const [endDate, setEndDate] = useState("2026-09-28");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [exportFormat, setExportFormat] = useState("csv");
+  const [downloading, setDownloading] = useState(false);
 
-  async function handleSaveSettings(e) {
+  const sampleReportData = [
+    { id: "REQ-9041", date: "2026-09-28", patient: "Rahul Sharma", hospital: "Sassoon Hospital", responseTime: "7.2 mins", status: "Completed" },
+    { id: "REQ-9040", date: "2026-09-28", patient: "Ananya Deshmukh", hospital: "Sahyadri Hospital", responseTime: "9.1 mins", status: "Completed" },
+    { id: "REQ-9039", date: "2026-09-28", patient: "Suresh Patil", hospital: "Noble Hospital", responseTime: "N/A", status: "Cancelled" },
+    { id: "REQ-9038", date: "2026-09-27", patient: "Priya Kulkarni", hospital: "Ruby Hall Clinic", responseTime: "6.8 mins", status: "Completed" },
+  ];
+
+  function convertToCSV(data) {
+    if (!data || !data.length) return "";
+    const headers = Object.keys(data[0]).join(",");
+    const rows = data.map((row) =>
+      Object.values(row)
+        .map((val) => `"${val}"`)
+        .join(",")
+    );
+    return [headers, ...rows].join("\n");
+  }
+
+  async function handleDownload(e) {
     e.preventDefault();
-    setSavedMessage("");
+    setDownloading(true);
 
     try {
-      await api.post("/admin/settings", {
-        autoDispatch,
-        maxRadiusKm,
-        emergencyHotline,
-        smsAlerts,
-        emailAlerts,
+      const response = await api.get("/admin/reports/download", {
+        params: { startDate, endDate, category: categoryFilter, format: exportFormat },
+        responseType: "blob",
       });
-      setSavedMessage("Settings saved successfully.");
-    } catch (err) {
-      // Local feedback fallback
-      setSavedMessage("Settings saved successfully (local cache).");
-    }
 
-    setTimeout(() => setSavedMessage(""), 3000);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `nirvaan_report_${startDate}_to_${endDate}.${exportFormat}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      let fileContent = "";
+      let mimeType = "";
+
+      if (exportFormat === "csv") {
+        fileContent = convertToCSV(sampleReportData);
+        mimeType = "text/csv;charset=utf-8;";
+      } else {
+        fileContent = JSON.stringify(sampleReportData, null, 2);
+        mimeType = "application/json";
+      }
+
+      const blob = new Blob([fileContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nirvaan_dispatch_report_${startDate}_to_${endDate}.${exportFormat}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+    { icon: Users, label: "Users", href: "/admin/users" },
     { icon: History, label: "History", href: "/admin/history" },
     { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-    { icon: SettingsIcon, label: "Settings", href: "/admin/settings", active: true },
+    { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports", active: true },
+    { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
 
   return (
-    <div className="min-h-screen bg-nirvaan-bg flex">
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
+      {/* Mobile Top Navigation Header */}
+      <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
+        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
+          <Ambulance className="w-6 h-6" /> Nirvaan
+        </h1>
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
+                item.active
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      {/* Desktop Left Sidebar */}
       <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0">
         <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
           <Ambulance className="w-6 h-6" /> Nirvaan
@@ -80,123 +142,148 @@ export default function Settings() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 max-w-4xl overflow-y-auto">
+      <main className="flex-1 p-4 md:p-6 max-w-5xl overflow-y-auto">
         <div className="mb-6">
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
-            System Settings
+            Export Operational Reports
           </h2>
           <p className="text-sm text-nirvaan-outline">
-            Configure dispatch algorithms, alert thresholds, and system preferences.
+            Generate and download formatted data logs for audit and performance reviews.
           </p>
         </div>
 
-        {savedMessage && (
-          <p className="text-xs text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg mb-4 font-medium">
-            {savedMessage}
-          </p>
-        )}
-
-        <form onSubmit={handleSaveSettings} className="space-y-6">
-          {/* Dispatch Configuration */}
-          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-            <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-nirvaan-secondary" /> Allocation & Dispatch Rules
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Settings Panel */}
+          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-1">
+            <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-1.5">
+              <Filter className="w-4 h-4 text-nirvaan-secondary" /> Report Filters
             </h3>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-nirvaan-surface-high">
-                <div>
-                  <p className="text-xs font-bold text-nirvaan-dark">Automated Ambulance Dispatch</p>
-                  <p className="text-[11px] text-nirvaan-outline">
-                    Automatically assign nearest available unit to patient requests without manual approval.
-                  </p>
-                </div>
+            <form onSubmit={handleDownload} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
+                  From Date
+                </label>
                 <input
-                  type="checkbox"
-                  checked={autoDispatch}
-                  onChange={(e) => setAutoDispatch(e.target.checked)}
-                  className="w-4 h-4 accent-nirvaan-secondary cursor-pointer"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
+                  required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-nirvaan-dark block mb-1">
-                  Maximum Allocation Radius (KM)
+                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
+                  To Date
                 </label>
                 <input
-                  type="number"
-                  value={maxRadiusKm}
-                  onChange={(e) => setMaxRadiusKm(Number(e.target.value))}
-                  className="w-32 border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-                />
-                <p className="text-[11px] text-nirvaan-outline mt-1">
-                  Units outside this distance will not receive instant emergency dispatch prompts.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Emergency & Helpline Settings */}
-          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-            <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-nirvaan-primary" /> System Emergency Overrides
-            </h3>
-
-            <div>
-              <label className="text-xs font-bold text-nirvaan-dark block mb-1">
-                Central Emergency Toll-Free Number
-              </label>
-              <input
-                type="text"
-                value={emergencyHotline}
-                onChange={(e) => setEmergencyHotline(e.target.value)}
-                className="w-full sm:w-80 border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-              />
-              <p className="text-[11px] text-nirvaan-outline mt-1">
-                Displayed in patient apps as fallback option when internet is offline.
-              </p>
-            </div>
-          </div>
-
-          {/* Notifications & Dispatch Alerts */}
-          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-            <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-2">
-              <Bell className="w-4 h-4 text-amber-500" /> Administrative Alerts
-            </h3>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-nirvaan-dark">SMS alerts for unassigned requests</span>
-                <input
-                  type="checkbox"
-                  checked={smsAlerts}
-                  onChange={(e) => setSmsAlerts(e.target.checked)}
-                  className="w-4 h-4 accent-nirvaan-secondary cursor-pointer"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
+                  required
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-nirvaan-dark">Email summary digest of daily dispatches</span>
-                <input
-                  type="checkbox"
-                  checked={emailAlerts}
-                  onChange={(e) => setEmailAlerts(e.target.checked)}
-                  className="w-4 h-4 accent-nirvaan-secondary cursor-pointer"
-                />
+              <div>
+                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
+                  Request Status Filter
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none bg-white"
+                >
+                  <option value="all">All Dispatches</option>
+                  <option value="completed">Completed Transports</option>
+                  <option value="cancelled">Cancelled Calls</option>
+                </select>
               </div>
-            </div>
+
+              <div>
+                <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
+                  Export Format
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat("csv")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 ${
+                      exportFormat === "csv"
+                        ? "bg-nirvaan-secondary text-white border-nirvaan-secondary"
+                        : "bg-white border-nirvaan-outline-variant text-nirvaan-dark"
+                    }`}
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat("json")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 ${
+                      exportFormat === "json"
+                        ? "bg-nirvaan-secondary text-white border-nirvaan-secondary"
+                        : "bg-white border-nirvaan-outline-variant text-nirvaan-dark"
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" /> JSON
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={downloading}
+                className="w-full mt-2 bg-nirvaan-secondary text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 transition-opacity"
+              >
+                <Download className="w-4 h-4" /> {downloading ? "Generating..." : "Download File"}
+              </button>
+            </form>
           </div>
 
-          {/* Save Action Button */}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="bg-nirvaan-secondary text-white px-6 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-95 transition-opacity"
-            >
-              <Save className="w-4 h-4" /> Save Configuration
-            </button>
+          {/* Preview Panel */}
+          <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-2">
+            <h3 className="text-sm font-bold text-nirvaan-dark mb-1">Export Data Preview</h3>
+            <p className="text-xs text-nirvaan-outline mb-4">
+              Showing preview of records matching period: <span className="font-semibold text-nirvaan-dark">{startDate}</span> to <span className="font-semibold text-nirvaan-dark">{endDate}</span>
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-nirvaan-surface-high text-nirvaan-outline font-bold">
+                    <th className="py-2 px-2">ID</th>
+                    <th className="py-2 px-2">Date</th>
+                    <th className="py-2 px-2">Patient</th>
+                    <th className="py-2 px-2">Hospital</th>
+                    <th className="py-2 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-nirvaan-surface-high text-nirvaan-dark font-medium">
+                  {sampleReportData.map((row) => (
+                    <tr key={row.id}>
+                      <td className="py-2.5 px-2 font-extrabold text-nirvaan-primary">{row.id}</td>
+                      <td className="py-2.5 px-2 text-gray-500">{row.date}</td>
+                      <td className="py-2.5 px-2">{row.patient}</td>
+                      <td className="py-2.5 px-2 text-nirvaan-secondary">{row.hospital}</td>
+                      <td className="py-2.5 px-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                            row.status === "Completed"
+                              ? "bg-green-50 text-green-700"
+                              : "bg-red-50 text-red-600"
+                          }`}
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </form>
+        </div>
       </main>
     </div>
   );

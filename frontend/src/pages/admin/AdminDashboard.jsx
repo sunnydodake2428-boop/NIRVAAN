@@ -9,6 +9,7 @@ import {
   Truck,
   Hospital,
   BarChart3,
+  FileSpreadsheet,
   Settings,
   Download,
   Plus,
@@ -39,7 +40,8 @@ export default function AdminDashboard() {
         }
       } catch (err) {
         console.warn("Could not load dashboard API stats, using fallback state:", err);
-      } finally {
+      } font-medium 
+      {
         if (isMounted) setLoading(false);
       }
     }
@@ -74,12 +76,13 @@ export default function AdminDashboard() {
     { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+    { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports" },
     { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
 
   return (
     <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
-      {/* Mobile Top Scrollable Navigation Header */}
+      {/* Mobile Top Navigation Header */}
       <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
         <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
           <Ambulance className="w-6 h-6" /> Nirvaan
@@ -193,8 +196,8 @@ export default function AdminDashboard() {
                   </tr>
                 )}
                 {!loading &&
-                  recentTrips.map((trip) => (
-                    <tr key={trip.id} className="hover:bg-nirvaan-surface">
+                  recentTrips.map((trip, idx) => (
+                    <tr key={trip.id || idx} className="hover:bg-nirvaan-surface">
                       <td className="py-3 px-2 font-bold text-nirvaan-dark">{trip.patient || "N/A"}</td>
                       <td className="py-3 px-2">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-nirvaan-secondary">

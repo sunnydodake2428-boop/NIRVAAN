@@ -8,6 +8,7 @@ import {
   Truck,
   Hospital,
   BarChart3,
+  FileSpreadsheet,
   Settings,
   Users,
   Mail,
@@ -47,6 +48,7 @@ export default function AdminUsers() {
     { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+    { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports" },
     { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
 
@@ -187,7 +189,7 @@ export default function AdminUsers() {
                           ) : (
                             <Phone className="w-3.5 h-3.5 text-nirvaan-success shrink-0" />
                           )}
-                          <span>{u.phone}</span>
+                          <span>{u.phone || "N/A"}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">

@@ -23,13 +23,28 @@ export default function DriverHome() {
   const [earnings, setEarnings] = useState({ today_earnings: 0, completed_rides: 0 });
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-    });
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => console.warn("Geolocation warning:", err)
+      );
+    }
   }, []);
 
   useEffect(() => {
-    api.get("/trips/earnings/mine").then((res) => setEarnings(res.data)).catch(() => {});
+    api
+      .get("/trips/earnings/mine")
+      .then((res) => {
+        if (res.data) {
+          setEarnings({
+            today_earnings: res.data.today_earnings || 0,
+            completed_rides: res.data.completed_rides || 0,
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   async function toggleAvailability() {
@@ -48,7 +63,7 @@ export default function DriverHome() {
     setLoading(true);
     try {
       const { data } = await api.get("/trips/available");
-      setRequests(data);
+      setRequests(data || []);
     } catch (err) {
       setError("Could not fetch requests");
     } finally {
@@ -59,7 +74,6 @@ export default function DriverHome() {
   useEffect(() => {
     fetchRequests();
     const interval = setInterval(fetchRequests, 3000);
-    
     return () => clearInterval(interval);
   }, [available]);
 
@@ -75,17 +89,20 @@ export default function DriverHome() {
 
   return (
     <div className="min-h-screen bg-nirvaan-bg pb-28 max-w-md mx-auto md:max-w-lg relative overflow-x-hidden">
-      {/* Header */}
+      {/* Top Header */}
       <header className="flex items-center justify-between px-4 py-4 bg-nirvaan-bg sticky top-0 z-20">
         <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-1.5">
           <Ambulance className="w-5 h-5" /> Nirvaan
         </h1>
-        <button className="bg-nirvaan-primary text-white text-sm font-bold px-4 py-2.5 rounded-full flex items-center gap-1.5 min-h-[44px] active:scale-95 transition-transform shadow-sm">
+        <a
+          href="tel:112"
+          className="bg-nirvaan-primary text-white text-sm font-bold px-4 py-2.5 rounded-full flex items-center gap-1.5 min-h-[44px] active:scale-95 transition-transform shadow-sm"
+        >
           <PhoneCall className="w-4 h-4" /> Call Help
-        </button>
+        </a>
       </header>
 
-      {/* Status toggle */}
+      {/* Driver Status Switch */}
       <div className="mx-4 mt-2 bg-nirvaan-surface rounded-xl p-4 flex items-center justify-between border border-nirvaan-surface-high shadow-sm">
         <div>
           <p className="text-xs text-nirvaan-outline font-semibold">Driver Status</p>
@@ -104,17 +121,17 @@ export default function DriverHome() {
         </button>
       </div>
 
-      {/* Live map */}
+      {/* Live Map Tracking */}
       <div className="mx-4 mt-4">
         {myLocation && <LiveMap userLocation={myLocation} height="180px" zoom={13} />}
       </div>
 
-      {/* Stat cards */}
+      {/* Quick Statistics */}
       <div className="grid grid-cols-2 gap-3 mx-4 mt-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
           <p className="text-xs text-nirvaan-outline font-semibold">Today's Earnings</p>
           <p className="text-lg sm:text-xl font-extrabold text-nirvaan-primary mt-1">
-            ₹{earnings.today_earnings.toFixed(2)}
+            ₹{Number(earnings.today_earnings || 0).toFixed(2)}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-nirvaan-surface-high">
@@ -127,13 +144,13 @@ export default function DriverHome() {
 
       {error && <p className="text-nirvaan-primary text-sm text-center mt-3 font-medium px-4">{error}</p>}
 
-      {/* Incoming requests */}
+      {/* Incoming Emergency Dispatch Panel */}
       <div className="mx-4 mt-5">
         <h3 className="font-extrabold text-nirvaan-dark mb-2 text-base sm:text-lg">
           {available ? "Incoming Requests" : "Go online to see requests"}
         </h3>
 
-        {available && loading && <p className="text-sm text-nirvaan-outline">Checking...</p>}
+        {available && loading && <p className="text-sm text-nirvaan-outline">Checking for dispatch calls...</p>}
         {available && !loading && requests.length === 0 && (
           <p className="text-sm text-nirvaan-outline">No emergency requests right now.</p>
         )}
@@ -146,18 +163,20 @@ export default function DriverHome() {
                   <Ambulance className="w-4 h-4 shrink-0" /> Emergency Request
                 </span>
                 <span className="text-xs text-nirvaan-outline font-semibold bg-white px-2 py-1 rounded-full border border-nirvaan-surface-high">
-                  {new Date(r.requested_at).toLocaleString([], {
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {r.requested_at
+                    ? new Date(r.requested_at).toLocaleString([], {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Now"}
                 </span>
               </div>
 
               <p className="text-xs text-nirvaan-outline font-semibold">PICKUP LOCATION</p>
               <p className="font-bold text-nirvaan-dark mb-3 text-sm sm:text-base break-words">
-                {r.pickup_address || `${r.pickup_lat.toFixed(4)}, ${r.pickup_lng.toFixed(4)}`}
+                {r.pickup_address || `${r.pickup_lat?.toFixed(4)}, ${r.pickup_lng?.toFixed(4)}`}
               </p>
 
               <div className="flex items-center gap-2 mb-3 pt-2 border-t border-nirvaan-outline-variant/30">
@@ -187,7 +206,7 @@ export default function DriverHome() {
         </div>
       </div>
 
-      {/* Shift history + support */}
+      {/* Shift History & Support */}
       <div className="grid grid-cols-2 gap-3 mx-4 mt-5">
         <Link 
           to="/driver/history" 
@@ -198,6 +217,7 @@ export default function DriverHome() {
           </span>
         </Link>
         <button 
+          onClick={() => alert("Contacting Nirvaan Control Desk...")}
           className="bg-white rounded-xl p-4 text-center shadow-sm border border-nirvaan-surface-high flex flex-col items-center justify-center min-h-[64px] active:bg-slate-50 transition-colors"
         >
           <span className="text-nirvaan-dark font-bold flex flex-col items-center gap-1 text-sm">
@@ -206,7 +226,7 @@ export default function DriverHome() {
         </button>
       </div>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-nirvaan-surface-high flex justify-around items-center py-2 z-30 max-w-md mx-auto md:max-w-lg shadow-lg">
         <Link to="/driver" className="flex flex-col items-center gap-0.5 text-nirvaan-secondary text-xs font-semibold min-w-[56px]">
           <span className="w-8 h-8 rounded-full bg-nirvaan-secondary text-white flex items-center justify-center">

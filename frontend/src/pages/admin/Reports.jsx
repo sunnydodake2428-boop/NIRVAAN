@@ -1,20 +1,18 @@
-// frontend/src/pages/admin/Reports.jsx
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/client";
 import {
   Ambulance,
   LayoutDashboard,
+  Users,
   History,
   Truck,
   Hospital,
   BarChart3,
+  FileSpreadsheet,
   Settings,
   Download,
-  FileSpreadsheet,
   FileText,
-  Calendar,
   Filter,
 } from "lucide-react";
 
@@ -25,7 +23,6 @@ export default function Reports() {
   const [exportFormat, setExportFormat] = useState("csv");
   const [downloading, setDownloading] = useState(false);
 
-  // Sample report preview dataset
   const sampleReportData = [
     { id: "REQ-9041", date: "2026-09-28", patient: "Rahul Sharma", hospital: "Sassoon Hospital", responseTime: "7.2 mins", status: "Completed" },
     { id: "REQ-9040", date: "2026-09-28", patient: "Ananya Deshmukh", hospital: "Sahyadri Hospital", responseTime: "9.1 mins", status: "Completed" },
@@ -49,7 +46,6 @@ export default function Reports() {
     setDownloading(true);
 
     try {
-      // Attempt backend export if API endpoint exists
       const response = await api.get("/admin/reports/download", {
         params: { startDate, endDate, category: categoryFilter, format: exportFormat },
         responseType: "blob",
@@ -63,7 +59,6 @@ export default function Reports() {
       link.click();
       link.remove();
     } catch (err) {
-      // Fallback local browser file generation
       let fileContent = "";
       let mimeType = "";
 
@@ -90,6 +85,7 @@ export default function Reports() {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+    { icon: Users, label: "Users", href: "/admin/users" },
     { icon: History, label: "History", href: "/admin/history" },
     { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
@@ -99,8 +95,31 @@ export default function Reports() {
   ];
 
   return (
-    <div className="min-h-screen bg-nirvaan-bg flex">
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
+      {/* Mobile Top Navigation Header */}
+      <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
+        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
+          <Ambulance className="w-6 h-6" /> Nirvaan
+        </h1>
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
+                item.active
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      {/* Desktop Left Sidebar */}
       <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0">
         <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
           <Ambulance className="w-6 h-6" /> Nirvaan
@@ -123,7 +142,7 @@ export default function Reports() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 max-w-5xl overflow-y-auto">
+      <main className="flex-1 p-4 md:p-6 max-w-5xl overflow-y-auto">
         <div className="mb-6">
           <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
             Export Operational Reports
@@ -134,7 +153,7 @@ export default function Reports() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Export Settings Card */}
+          {/* Settings Panel */}
           <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-1">
             <h3 className="text-sm font-bold text-nirvaan-dark mb-4 flex items-center gap-1.5">
               <Filter className="w-4 h-4 text-nirvaan-secondary" /> Report Filters
@@ -145,15 +164,13 @@ export default function Reports() {
                 <label className="text-xs font-semibold text-nirvaan-dark block mb-1">
                   From Date
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
-                    required
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full border border-nirvaan-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-nirvaan-secondary outline-none"
+                  required
+                />
               </div>
 
               <div>
@@ -224,7 +241,7 @@ export default function Reports() {
             </form>
           </div>
 
-          {/* Report Data Preview Table */}
+          {/* Preview Panel */}
           <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm lg:col-span-2">
             <h3 className="text-sm font-bold text-nirvaan-dark mb-1">Export Data Preview</h3>
             <p className="text-xs text-nirvaan-outline mb-4">
