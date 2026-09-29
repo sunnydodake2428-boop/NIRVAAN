@@ -1,16 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/client";
 import {
-  Ambulance,
-  LayoutDashboard,
-  Users,
-  History as HistoryIcon,
-  Truck,
-  Hospital,
-  BarChart3,
-  FileSpreadsheet,
-  Settings,
   Search,
   CheckCircle2,
   XCircle,
@@ -98,174 +88,115 @@ export default function History() {
     return matchesSearch && matchesStatus;
   });
 
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-    { icon: Users, label: "Users", href: "/admin/users" },
-    { icon: HistoryIcon, label: "History", href: "/admin/history", active: true },
-    { icon: Truck, label: "Fleet", href: "/admin/fleet" },
-    { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
-    { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
-    { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports" },
-    { icon: Settings, label: "Settings", href: "/admin/settings" },
-  ];
-
   return (
-    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
-      {/* Mobile Top Navigation Header */}
-      <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
-        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
-          <Ambulance className="w-6 h-6" /> Nirvaan
-        </h1>
-        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
-                item.active
-                  ? "bg-nirvaan-secondary text-white"
-                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </header>
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
+            Dispatch History Logs
+          </h2>
+          <p className="text-sm text-nirvaan-outline">
+            Review completed and past emergency dispatch records across your network.
+          </p>
+        </div>
+        <button
+          onClick={fetchHistory}
+          className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
+          title="Refresh History"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
 
-      {/* Desktop Left Sidebar */}
-      <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0">
-        <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
-          <Ambulance className="w-6 h-6" /> Nirvaan
-        </h1>
-        <nav className="space-y-1 flex-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                item.active
-                  ? "bg-nirvaan-secondary text-white"
-                  : "text-nirvaan-dark hover:bg-nirvaan-surface"
-              }`}
-            >
-              <item.icon className="w-4 h-4" /> {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-6 max-w-6xl overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">
-              Dispatch History Logs
-            </h2>
-            <p className="text-sm text-nirvaan-outline">
-              Review completed and past emergency dispatch records across your network.
-            </p>
-          </div>
-          <button
-            onClick={fetchHistory}
-            className="p-2 bg-white border border-nirvaan-surface-high rounded-lg text-nirvaan-dark hover:bg-nirvaan-surface transition-colors"
-            title="Refresh History"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
+      {/* Search Bar & Filters */}
+      <div className="bg-white p-4 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search ID, patient, or pickup area..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 border border-nirvaan-outline-variant rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
+          />
         </div>
 
-        {/* Search Bar & Filters */}
-        <div className="bg-white p-4 rounded-xl border border-nirvaan-surface-high shadow-sm mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search ID, patient, or pickup area..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-nirvaan-outline-variant rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-nirvaan-secondary"
-            />
-          </div>
-
-          <div className="flex gap-2 w-full sm:w-auto">
-            {["all", "completed", "cancelled"].map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
-                  statusFilter === st
-                    ? "bg-nirvaan-secondary text-white"
-                    : "bg-nirvaan-surface text-nirvaan-dark hover:bg-gray-200"
-                }`}
-              >
-                {st}
-              </button>
-            ))}
-          </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          {["all", "completed", "cancelled"].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+                statusFilter === st
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-nirvaan-surface text-nirvaan-dark hover:bg-gray-200"
+              }`}
+            >
+              {st}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* History Log List */}
-        <div className="bg-white rounded-xl border border-nirvaan-surface-high shadow-sm overflow-hidden">
-          {loading ? (
-            <p className="p-6 text-xs text-nirvaan-outline text-center">Loading dispatch logs...</p>
-          ) : filteredHistory.length === 0 ? (
-            <p className="p-6 text-xs text-nirvaan-outline text-center">
-              No history logs found matching your filter criteria.
-            </p>
-          ) : (
-            <div className="divide-y divide-nirvaan-surface-high">
-              {filteredHistory.map((item) => (
-                <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-xs text-nirvaan-primary">{item.id}</span>
-                      <span className="text-xs font-bold text-nirvaan-dark">{item.patient_name}</span>
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        ({new Date(item.created_at).toLocaleString()})
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-nirvaan-outline">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        {item.pickup_address}
-                      </span>
-                      {item.contact && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          {item.contact}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-xs text-nirvaan-dark font-medium">
-                      Hospital: <span className="text-nirvaan-secondary font-semibold">{item.hospital_name || "N/A"}</span> • Unit: <span className="font-mono text-xs">{item.ambulance_code || "N/A"}</span>
-                    </div>
+      {/* History Log List */}
+      <div className="bg-white rounded-xl border border-nirvaan-surface-high shadow-sm overflow-hidden">
+        {loading ? (
+          <p className="p-6 text-xs text-nirvaan-outline text-center">Loading dispatch logs...</p>
+        ) : filteredHistory.length === 0 ? (
+          <p className="p-6 text-xs text-nirvaan-outline text-center">
+            No history logs found matching your filter criteria.
+          </p>
+        ) : (
+          <div className="divide-y divide-nirvaan-surface-high">
+            {filteredHistory.map((item) => (
+              <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-xs text-nirvaan-primary">{item.id}</span>
+                    <span className="text-xs font-bold text-nirvaan-dark">{item.patient_name}</span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      ({new Date(item.created_at).toLocaleString()})
+                    </span>
                   </div>
 
-                  <div className="shrink-0 flex items-center gap-2">
-                    {item.status?.toLowerCase() === "completed" ? (
-                      <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Completed
-                      </span>
-                    ) : item.status?.toLowerCase() === "cancelled" ? (
-                      <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-bold">
-                        <XCircle className="w-3.5 h-3.5" /> Cancelled
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold">
-                        <Clock className="w-3.5 h-3.5" /> {item.status}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-nirvaan-outline">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      {item.pickup_address}
+                    </span>
+                    {item.contact && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        {item.contact}
                       </span>
                     )}
                   </div>
+
+                  <div className="text-xs text-nirvaan-dark font-medium">
+                    Hospital: <span className="text-nirvaan-secondary font-semibold">{item.hospital_name || "N/A"}</span> • Unit: <span className="font-mono text-xs">{item.ambulance_code || "N/A"}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+
+                <div className="shrink-0 flex items-center gap-2">
+                  {item.status?.toLowerCase() === "completed" ? (
+                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Completed
+                    </span>
+                  ) : item.status?.toLowerCase() === "cancelled" ? (
+                    <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <XCircle className="w-3.5 h-3.5" /> Cancelled
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <Clock className="w-3.5 h-3.5" /> {item.status}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
