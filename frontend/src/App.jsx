@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import { ActiveTripProvider } from "./context/ActiveTripContext";
 import ActiveTripBar from "./components/ActiveTripBar";
+import AdminLayout from "./components/AdminLayout";
 
 // Patient
 import EmergencyContacts from "./pages/patient/EmergencyContacts";
@@ -30,7 +31,6 @@ import DriverEditProfile from "./pages/driver/EditProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import AdminUsers from "./pages/admin/AdminUsers";
-import FleetManagement from "./pages/admin/FleetManagement";
 import Analytics from "./pages/admin/Analytics";
 import History from "./pages/admin/History";
 import Fleet from "./pages/admin/Fleet";
@@ -76,15 +76,24 @@ function App() {
           <Route path="/driver/profile" element={<ProtectedRoute allowedRole="driver"><DriverProfile /></ProtectedRoute>} />
           <Route path="/driver/ai" element={<ProtectedRoute allowedRole="driver"><DriverAI /></ProtectedRoute>} />
 
-          {/* Admin routes */}
-          <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/admin/hospitals" element={<ProtectedRoute allowedRole="admin"><HospitalManagement /></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
-          <Route path="/admin/fleet" element={<ProtectedRoute allowedRole="admin"><Fleet /></ProtectedRoute>} />
-          <Route path="/admin/analytics" element={<ProtectedRoute allowedRole="admin"><Analytics /></ProtectedRoute>} />
-          <Route path="/admin/history" element={<ProtectedRoute allowedRole="admin"><History /></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute allowedRole="admin"><Settings /></ProtectedRoute>} />
-          <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><Reports /></ProtectedRoute>} />
+          {/* Nested Admin Routes using AdminLayout */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="hospitals" element={<HospitalManagement />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="fleet" element={<Fleet />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="history" element={<History />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="reports" element={<Reports />} />
+          </Route>
 
           {/* Catch-all route */}
           <Route path="*" element={<Navigate to="/login" />} />
