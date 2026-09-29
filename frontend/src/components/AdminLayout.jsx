@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Ambulance,
@@ -25,15 +26,24 @@ const navItems = [
 // Hides the scrollbar without needing a custom CSS class
 const HIDE_SCROLLBAR = "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
+// Safety net: if AdminLayout ever ends up rendered inside another AdminLayout
+// (e.g. a page wraps itself in <AdminLayout>), the inner one renders only its
+// content, so the header / sidebar can never appear twice.
+const AdminLayoutContext = createContext(false);
+
 // THE ONLY place in the app that renders the admin header / sidebar.
 // Admin pages must render page content only.
-export default function AdminLayout() {
+export default function AdminLayout({ children }) {
+  const nested = useContext(AdminLayoutContext);
   const { pathname } = useLocation();
+
+  if (nested) return children ?? <Outlet />;
 
   const isActive = (href) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
+    <AdminLayoutContext.Provider value={true}>
     <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
       {/* Mobile top navigation */}
       <header className="sticky top-0 z-20 bg-white border-b border-nirvaan-surface-high px-4 pt-4 pb-3 flex flex-col gap-3 md:hidden">
@@ -83,8 +93,9 @@ export default function AdminLayout() {
 
       {/* Page content */}
       <main className="flex-1 min-w-0 p-4 md:p-6 overflow-x-hidden">
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
     </div>
+    </AdminLayoutContext.Provider>
   );
 }
