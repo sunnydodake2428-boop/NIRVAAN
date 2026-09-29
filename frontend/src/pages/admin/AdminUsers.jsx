@@ -42,10 +42,10 @@ export default function AdminUsers() {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+    { icon: Users, label: "Users", href: "/admin/users", active: true },
     { icon: History, label: "History", href: "/admin/history" },
     { icon: Truck, label: "Fleet", href: "/admin/fleet" },
     { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
-    { icon: Users, label: "Users", active: true },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
     { icon: Settings, label: "Settings", href: "/admin/settings" },
   ];
@@ -57,40 +57,60 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="min-h-screen bg-nirvaan-bg flex">
-      <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col">
+    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
+      {/* Mobile Top Scrollable Navigation Header */}
+      <header className="bg-white border-b border-nirvaan-surface-high p-4 flex flex-col gap-3 md:hidden">
+        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
+          <Ambulance className="w-6 h-6" /> Nirvaan
+        </h1>
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 no-scrollbar">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
+                item.active
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      {/* Desktop Left Sidebar */}
+      <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0">
         <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
           <Ambulance className="w-6 h-6" /> Nirvaan
         </h1>
         <nav className="space-y-1 flex-1">
-          {navItems.map((item) =>
-            item.href && !item.active ? (
-              <Link
-                key={item.label}
-                to={item.href}
-                className="flex items-center gap-2.5 text-nirvaan-dark px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-nirvaan-surface transition-colors"
-              >
-                <item.icon className="w-4 h-4" /> {item.label}
-              </Link>
-            ) : (
-              <div
-                key={item.label}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold ${
-                  item.active ? "bg-nirvaan-secondary text-white" : "text-nirvaan-dark"
-                }`}
-              >
-                <item.icon className="w-4 h-4" /> {item.label}
-              </div>
-            )
-          )}
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                item.active
+                  ? "bg-nirvaan-secondary text-white"
+                  : "text-nirvaan-dark hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </nav>
       </aside>
 
-      <main className="flex-1 p-6">
+      {/* Main Content Area */}
+      <main className="flex-1 p-4 md:p-6 max-w-full overflow-x-hidden">
         <h2 className="text-2xl font-extrabold text-nirvaan-dark mb-1">Registered Users</h2>
         <p className="text-sm text-nirvaan-outline mb-6">All patients and drivers registered on the platform.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Stats Overview Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl p-5 shadow-sm border border-nirvaan-surface-high">
             <p className="text-xs text-nirvaan-outline font-semibold">Total Users</p>
             <p className="text-3xl font-extrabold text-nirvaan-dark mt-1">{users.length}</p>
@@ -109,12 +129,13 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {/* Filter Pills */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
           {["all", "caller", "driver", "admin"].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
                 filter === f
                   ? "bg-nirvaan-secondary text-white"
                   : "bg-white border border-nirvaan-outline-variant text-nirvaan-dark hover:bg-nirvaan-surface"
@@ -125,9 +146,10 @@ export default function AdminUsers() {
           ))}
         </div>
 
+        {/* Users Table */}
         <div className="bg-white rounded-xl shadow-sm border border-nirvaan-surface-high overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="text-left text-nirvaan-outline border-b border-nirvaan-surface-high bg-nirvaan-surface">
                   <th className="px-4 py-3 font-semibold">ID</th>
@@ -155,7 +177,7 @@ export default function AdminUsers() {
                 )}
                 {!loading &&
                   filtered.map((u) => (
-                    <tr key={u.id} className="border-b border-nirvaan-surface-high last:border-0 hover:bg-gray-50/50">
+                    <tr key={u.id} className="border-b border-nirvaan-surface-high last:border-0 hover:bg-nirvaan-surface">
                       <td className="px-4 py-3 text-nirvaan-outline">#{u.id}</td>
                       <td className="px-4 py-3 font-bold text-nirvaan-dark">{u.name || "N/A"}</td>
                       <td className="px-4 py-3 text-nirvaan-outline">
@@ -181,7 +203,7 @@ export default function AdminUsers() {
                               : "bg-green-50 text-nirvaan-success"
                           }`}
                         >
-                          {u.signup_method}
+                          {u.signup_method || "Phone"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-nirvaan-outline">{formatDate(u.created_at)}</td>
