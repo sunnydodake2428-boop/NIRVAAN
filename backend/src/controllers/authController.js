@@ -20,6 +20,7 @@ async function signup(req, res) {
       return res.status(409).json({ error: "Phone number already registered" });
     }
 
+    // Hash password with optimal work factor for fast execution
     const password_hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users (name, phone, password_hash, role)
@@ -57,7 +58,12 @@ async function login(req, res) {
       return res.status(400).json({ error: "Phone or email and password are required" });
     }
 
-    const result = await pool.query("SELECT * FROM users WHERE phone = $1", [identifier]);
+    // Optimized select: limit columns and fetch indexed row
+    const result = await pool.query(
+      "SELECT id, name, phone, password_hash, role, avatar_url FROM users WHERE phone = $1",
+      [identifier]
+    );
+
     if (result.rows.length === 0) {
       return res.status(401).json({ error: "Invalid phone/email or password" });
     }
@@ -136,17 +142,20 @@ async function googleLogin(req, res) {
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
 
-    let userResult = await pool.query("SELECT * FROM users WHERE phone = $1", [email]);
+    let userResult = await pool.query(
+      "SELECT id, name, phone, role, avatar_url FROM users WHERE phone = $1",
+      [email]
+    );
     let user = userResult.rows[0];
 
-    // Only hash password when creating a new user
+    // Fast non-blocking dummy string generation for OAuth users
     if (!user) {
-      const password_hash = await bcrypt.hash(email + Date.now(), 8);
+      const dummyPassword = "GOOGLE_AUTH_" + Math.random().toString(36).substring(2);
       const insertResult = await pool.query(
         `INSERT INTO users (name, phone, password_hash, role, avatar_url)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, name, phone, role, avatar_url`,
-        [name, email, password_hash, role || "caller", picture]
+        [name, email, dummyPassword, role || "caller", picture]
       );
       user = insertResult.rows[0];
       if (user.role === "driver") {
