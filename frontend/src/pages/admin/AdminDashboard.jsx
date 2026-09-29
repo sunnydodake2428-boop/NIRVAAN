@@ -57,7 +57,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <>
+    <div className="space-y-6">
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -147,6 +147,6 @@ export default function AdminDashboard() {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
