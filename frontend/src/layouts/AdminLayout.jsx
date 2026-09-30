@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Ambulance,
   LayoutDashboard,
@@ -10,6 +10,7 @@ import {
   BarChart3,
   FileSpreadsheet,
   Settings,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -36,8 +37,15 @@ const AdminLayoutContext = createContext(false);
 export default function AdminLayout({ children }) {
   const nested = useContext(AdminLayoutContext);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   if (nested) return children ?? <Outlet />;
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    navigate("/login", { replace: true });
+  };
 
   const isActive = (href) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -47,9 +55,17 @@ export default function AdminLayout({ children }) {
     <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
       {/* Mobile top navigation */}
       <header className="sticky top-0 z-20 bg-white border-b border-nirvaan-surface-high px-4 pt-4 pb-3 flex flex-col gap-3 md:hidden">
-        <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
-          <Ambulance className="w-6 h-6" /> Nirvaan
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
+            <Ambulance className="w-6 h-6" /> Nirvaan
+          </h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-nirvaan-primary border border-nirvaan-surface-high hover:bg-nirvaan-surface transition-colors"
+          >
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
+        </div>
         <nav className={`flex items-center gap-2 overflow-x-auto whitespace-nowrap ${HIDE_SCROLLBAR}`}>
           {navItems.map((item) => (
             <Link
@@ -89,6 +105,13 @@ export default function AdminLayout({ children }) {
             </Link>
           ))}
         </nav>
+        <button
+          onClick={handleLogout}
+          className="mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-nirvaan-primary hover:bg-nirvaan-surface transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
       </aside>
 
       {/* Page content */}
