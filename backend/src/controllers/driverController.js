@@ -4,6 +4,9 @@ const pool = require("../config/db");
 async function setAvailability(req, res) {
   try {
     const { is_available } = req.body;
+    if (typeof is_available !== "boolean") {
+      return res.status(400).json({ error: "is_available must be true or false" });
+    }
     const result = await pool.query(
       `UPDATE drivers SET is_available = $1, updated_at = NOW() WHERE user_id = $2 RETURNING *`,
       [is_available, req.user.id]
@@ -18,10 +21,12 @@ async function setAvailability(req, res) {
   }
 }
 
-
 async function getMyDriverProfile(req, res) {
   try {
     const result = await pool.query("SELECT * FROM drivers WHERE user_id = $1", [req.user.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Driver profile not found" });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -32,16 +37,27 @@ async function getMyDriverProfile(req, res) {
 async function updateVehicle(req, res) {
   try {
     const { vehicle_number, vehicle_type } = req.body;
+    // COALESCE: sending only one field no longer wipes the other
     const result = await pool.query(
-      `UPDATE drivers SET vehicle_number = $1, vehicle_type = $2 WHERE user_id = $3 RETURNING *`,
-      [vehicle_number, vehicle_type, req.user.id]
+      `UPDATE drivers
+       SET vehicle_number = COALESCE($1, vehicle_number),
+           vehicle_type = COALESCE($2, vehicle_type)
+       WHERE user_id = $3 RETURNING *`,
+      [
+        vehicle_number ? String(vehicle_number).trim().slice(0, 30) : null,
+        vehicle_type || null,
+        req.user.id,
+      ]
     );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Driver profile not found" });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
+    if (err.code === "22P02") return res.status(400).json({ error: "Invalid vehicle type" });
     res.status(500).json({ error: "Failed to update vehicle" });
   }
 }
-
 
 module.exports = { setAvailability, getMyDriverProfile, updateVehicle };

@@ -2,10 +2,21 @@ const pool = require("../config/db");
 
 async function submitRating(req, res) {
   try {
-    const { tripId } = req.params;
-    const { rating, review } = req.body;
+    const tripId = Number(req.params.tripId);
+    if (!Number.isInteger(tripId) || tripId <= 0) {
+      return res.status(400).json({ error: "Invalid trip id" });
+    }
+    const rating = Number(req.body.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "rating must be a whole number from 1 to 5" });
+    }
+    const review = req.body.review ? String(req.body.review).slice(0, 1000) : null;
 
-    const tripResult = await pool.query("SELECT driver_id FROM trips WHERE id = $1", [tripId]);
+    // Only the patient who took this trip can rate it
+    const tripResult = await pool.query(
+      "SELECT driver_id FROM trips WHERE id = $1 AND caller_id = $2",
+      [tripId, req.user.id]
+    );
     if (tripResult.rows.length === 0) return res.status(404).json({ error: "Trip not found" });
 
     const driverId = tripResult.rows[0].driver_id;

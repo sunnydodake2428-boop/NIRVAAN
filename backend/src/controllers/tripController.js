@@ -1,15 +1,64 @@
 const pool = require("../config/db");
 
+// ---------------------------------------------------------------------------
+// Settings you can change
+// ---------------------------------------------------------------------------
+// Drivers sign up on their own, so anyone can become a "driver" and see patient
+// phone numbers. Set this to true ONCE you have a way to mark drivers as verified
+// (drivers.is_verified = true). Until then it stays false so nothing breaks.
+const REQUIRE_VERIFIED_DRIVERS = false;
+
+// Open requests older than this are hidden from drivers (there is no cancel button yet).
+const OPEN_REQUEST_MINUTES = 30;
+// ---------------------------------------------------------------------------
+
+const toId = (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+// null = not provided, NaN = invalid, otherwise the number
+const toCoord = (v, max) => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : NaN;
+};
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const rad = (d) => (d * Math.PI) / 180;
+  const a =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
 // Caller requests an ambulance
 async function requestTrip(req, res) {
   try {
     const { pickup_lat, pickup_lng, pickup_address } = req.body;
+    const lat = toCoord(pickup_lat, 90);
+    const lng = toCoord(pickup_lng, 180);
+    if (lat === null || lng === null || Number.isNaN(lat) || Number.isNaN(lng)) {
+      return res.status(400).json({ error: "Valid pickup_lat and pickup_lng are required" });
+    }
+    const address = pickup_address ? String(pickup_address).slice(0, 300) : null;
     const caller_id = req.user.id;
+
+    // Double-tap protection: return the caller's still-open request instead of creating a duplicate
+    const open = await pool.query(
+      `SELECT * FROM trips
+       WHERE caller_id = $1 AND status::text = 'requested'
+         AND requested_at > NOW() - make_interval(mins => $2::int)
+       ORDER BY requested_at DESC LIMIT 1`,
+      [caller_id, OPEN_REQUEST_MINUTES]
+    );
+    if (open.rows.length > 0) return res.status(200).json(open.rows[0]);
 
     const result = await pool.query(
       `INSERT INTO trips (caller_id, pickup_lat, pickup_lng, pickup_address, status)
        VALUES ($1, $2, $3, $4, 'requested') RETURNING *`,
-      [caller_id, pickup_lat, pickup_lng, pickup_address]
+      [caller_id, lat, lng, address]
     );
 
     res.status(201).json(result.rows[0]);
@@ -22,10 +71,18 @@ async function requestTrip(req, res) {
 // Driver accepts a trip
 async function acceptTrip(req, res) {
   try {
-    const { tripId } = req.params;
-    const driverResult = await pool.query("SELECT id FROM drivers WHERE user_id = $1", [req.user.id]);
+    const tripId = toId(req.params.tripId);
+    if (!tripId) return res.status(400).json({ error: "Invalid trip id" });
+
+    const driverResult = await pool.query(
+      "SELECT id, is_verified FROM drivers WHERE user_id = $1",
+      [req.user.id]
+    );
     if (driverResult.rows.length === 0) {
       return res.status(403).json({ error: "Not a registered driver" });
+    }
+    if (REQUIRE_VERIFIED_DRIVERS && !driverResult.rows[0].is_verified) {
+      return res.status(403).json({ error: "Your driver account is awaiting verification" });
     }
     const driver_id = driverResult.rows[0].id;
 
@@ -46,16 +103,35 @@ async function acceptTrip(req, res) {
   }
 }
 
-// Mark trip completed
+// Mark trip completed (only the patient who requested it, the assigned driver, or an admin)
 async function completeTrip(req, res) {
   try {
-    const { tripId } = req.params;
-    const { dropoff_lat, dropoff_lng } = req.body;
+    const tripId = toId(req.params.tripId);
+    if (!tripId) return res.status(400).json({ error: "Invalid trip id" });
+
+    const lat = toCoord(req.body.dropoff_lat, 90);
+    const lng = toCoord(req.body.dropoff_lng, 180);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      return res.status(400).json({ error: "Invalid drop-off coordinates" });
+    }
+
     const result = await pool.query(
-      `UPDATE trips SET status = 'completed', completed_at = NOW(), dropoff_lat = $2, dropoff_lng = $3
-       WHERE id = $1 RETURNING *`,
-      [tripId, dropoff_lat || null, dropoff_lng || null]
+      `UPDATE trips t
+       SET status = 'completed', completed_at = NOW(), dropoff_lat = $2, dropoff_lng = $3
+       WHERE t.id = $1
+         AND t.driver_id IS NOT NULL
+         AND t.status::text NOT IN ('completed', 'cancelled')
+         AND (
+           $4::boolean
+           OR t.caller_id = $5::int
+           OR t.driver_id = (SELECT id FROM drivers WHERE user_id = $5::int)
+         )
+       RETURNING t.*`,
+      [tripId, lat, lng, req.user.role === "admin", req.user.id]
     );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Trip not found, already finished, or not yours" });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -88,26 +164,45 @@ async function getMyTrips(req, res) {
   }
 }
 
-// Submit price feedback after a trip
+// Submit price feedback after a trip (patient, assigned driver, or admin)
 async function submitPriceFeedback(req, res) {
   try {
-    const { tripId } = req.params;
-    const { price_charged } = req.body;
+    const tripId = toId(req.params.tripId);
+    if (!tripId) return res.status(400).json({ error: "Invalid trip id" });
 
-    const tripResult = await pool.query("SELECT * FROM trips WHERE id = $1", [tripId]);
-    if (tripResult.rows.length === 0) {
-      return res.status(404).json({ error: "Trip not found" });
+    const price = Number(req.body.price_charged);
+    if (!Number.isFinite(price) || price < 0 || price > 1000000) {
+      return res.status(400).json({ error: "price_charged must be a valid amount" });
     }
 
-    const distance_km = 0;
-    const vehicle_type = "basic";
+    const tripResult = await pool.query(
+      `SELECT t.*, d.vehicle_type AS driver_vehicle_type, d.user_id AS driver_user_id
+       FROM trips t LEFT JOIN drivers d ON d.id = t.driver_id
+       WHERE t.id = $1`,
+      [tripId]
+    );
+    const trip = tripResult.rows[0];
+    const allowed =
+      trip &&
+      (req.user.role === "admin" ||
+        trip.caller_id === req.user.id ||
+        trip.driver_user_id === req.user.id);
+    if (!allowed) return res.status(404).json({ error: "Trip not found" });
+
+    const hasBoth =
+      trip.pickup_lat != null && trip.pickup_lng != null &&
+      trip.dropoff_lat != null && trip.dropoff_lng != null;
+    const distance_km = hasBoth
+      ? Number(haversineKm(trip.pickup_lat, trip.pickup_lng, trip.dropoff_lat, trip.dropoff_lng).toFixed(2))
+      : 0;
+    const vehicle_type = trip.driver_vehicle_type || "basic";
 
     const result = await pool.query(
       `INSERT INTO trip_prices (trip_id, distance_km, price_charged, vehicle_type)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (trip_id) DO UPDATE SET price_charged = $3
        RETURNING *`,
-      [tripId, distance_km, price_charged, vehicle_type]
+      [tripId, distance_km, price, vehicle_type]
     );
 
     res.status(201).json(result.rows[0]);
@@ -117,15 +212,21 @@ async function submitPriceFeedback(req, res) {
   }
 }
 
-// Get all unassigned trip requests (for drivers to see)
+// Get open trip requests (for drivers to see)
 async function getAvailableTrips(req, res) {
   try {
+    if (REQUIRE_VERIFIED_DRIVERS) {
+      const d = await pool.query("SELECT is_verified FROM drivers WHERE user_id = $1", [req.user.id]);
+      if (d.rows.length === 0 || !d.rows[0].is_verified) return res.json([]);
+    }
     const result = await pool.query(
       `SELECT trips.*, users.name AS caller_name, users.phone AS caller_phone
        FROM trips
        LEFT JOIN users ON trips.caller_id = users.id
-       WHERE trips.status = 'requested'
-       ORDER BY trips.requested_at ASC`
+       WHERE trips.status::text = 'requested'
+         AND trips.requested_at > NOW() - make_interval(mins => $1::int)
+       ORDER BY trips.requested_at ASC`,
+      [OPEN_REQUEST_MINUTES]
     );
     res.json(result.rows);
   } catch (err) {
@@ -134,10 +235,12 @@ async function getAvailableTrips(req, res) {
   }
 }
 
-// Get full trip details with driver info (for live tracking screen)
+// Full trip details with driver info (live tracking screen) - only for people involved in the trip
 async function getTripDetails(req, res) {
   try {
-    const { tripId } = req.params;
+    const tripId = toId(req.params.tripId);
+    if (!tripId) return res.status(400).json({ error: "Invalid trip id" });
+
     const result = await pool.query(
       `SELECT
          trips.*,
@@ -152,8 +255,9 @@ async function getTripDetails(req, res) {
        FROM trips
        LEFT JOIN drivers ON trips.driver_id = drivers.id
        LEFT JOIN users ON drivers.user_id = users.id
-       WHERE trips.id = $1`,
-      [tripId]
+       WHERE trips.id = $1
+         AND ($2::text = 'admin' OR trips.caller_id = $3::int OR drivers.user_id = $3::int)`,
+      [tripId, req.user.role, req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "Trip not found" });
     res.json(result.rows[0]);
@@ -163,7 +267,7 @@ async function getTripDetails(req, res) {
   }
 }
 
-// Admin: dashboard stats
+// Admin: dashboard stats (the admin dashboard now uses /api/admin/stats instead)
 async function getAdminStats(req, res) {
   try {
     const totalTrips = await pool.query("SELECT COUNT(*) FROM trips");
