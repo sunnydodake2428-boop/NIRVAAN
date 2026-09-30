@@ -35,7 +35,9 @@ export function ActiveTripProvider({ children }) {
 
   useEffect(() => {
     if (!activeTripId) return;
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+  auth: { token: localStorage.getItem("token") },
+});
     socketRef.current.emit("join-trip", activeTripId);
     socketRef.current.on("location-update", (loc) => setDriverLocation(loc));
     return () => socketRef.current?.disconnect();

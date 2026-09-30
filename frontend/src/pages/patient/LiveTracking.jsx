@@ -53,7 +53,9 @@ export default function LiveTracking() {
   }, [tripId, navigate]);
 
   useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+  auth: { token: localStorage.getItem("token") },
+});
     socketRef.current.emit("join-trip", tripId);
 
     socketRef.current.on("driver-location-updated", (loc) => {

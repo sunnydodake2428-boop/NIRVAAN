@@ -23,7 +23,9 @@ export default function DriverTrip() {
   }, [tripId]);
 
   useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+  auth: { token: localStorage.getItem("token") },
+});
     return () => socketRef.current?.disconnect();
   }, []);
 
