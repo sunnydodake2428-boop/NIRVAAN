@@ -1,154 +1,120 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../../api/client";
-import { Download, Plus } from "lucide-react";
+import { createContext, useContext } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { logout } from "../utils/auth";
+import {
+  Ambulance,
+  LayoutDashboard,
+  Users,
+  History,
+  Truck,
+  Hospital,
+  BarChart3,
+  FileSpreadsheet,
+  Settings,
+  LogOut,
+} from "lucide-react";
 
-export default function AdminDashboard() {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalTrips: 0,
-    activeDrivers: 0,
-    avgResponseTime: "0.0 mins",
-  });
-  const [recentTrips, setRecentTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
+const navItems = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: Users, label: "Users", href: "/admin/users" },
+  { icon: History, label: "History", href: "/admin/history" },
+  { icon: Truck, label: "Fleet", href: "/admin/fleet" },
+  { icon: Hospital, label: "Hospitals", href: "/admin/hospitals" },
+  { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+  { icon: FileSpreadsheet, label: "Reports", href: "/admin/reports" },
+  { icon: Settings, label: "Settings", href: "/admin/settings" },
+];
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchDashboardData() {
-      try {
-        const { data } = await api.get("/admin/stats");
-        if (isMounted && data) {
-          setStats({
-            totalTrips: data.stats?.totalTrips ?? 0,
-            activeDrivers: data.stats?.activeDrivers ?? 0,
-            avgResponseTime: data.stats?.avgResponseTime || "0.0 mins",
-          });
-          setRecentTrips(data.recentTrips || []);
-        }
-      } catch (err) {
-        console.warn("Could not load dashboard API stats, using fallback state:", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    fetchDashboardData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+// Hides the scrollbar without needing a custom CSS class
+const HIDE_SCROLLBAR = "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
-  const handleDownloadReport = () => {
-    if (recentTrips.length === 0) {
-      alert("No trip data available to export.");
-      return;
-    }
-    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const rows = recentTrips.map((t) =>
-      [t.patient || "N/A", t.status || "Completed", t.date || "N/A", t.time || "0 min"].map(q).join(",")
-    );
-    const csv = ["Patient,Status,Requested,ResponseTime", ...rows].join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "nirvaan_operations_report.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+// Safety net: if AdminLayout ever ends up rendered inside another AdminLayout
+// (e.g. a page wraps itself in <AdminLayout>), the inner one renders only its
+// content, so the header / sidebar can never appear twice.
+const AdminLayoutContext = createContext(false);
+
+// THE ONLY place in the app that renders the admin header / sidebar.
+// Admin pages must render page content only.
+export default function AdminLayout({ children }) {
+  const nested = useContext(AdminLayoutContext);
+  const { pathname } = useLocation();
+
+  if (nested) return children ?? <Outlet />;
+
+  const handleLogout = () => logout();
+
+  const isActive = (href) =>
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
-    <div className="space-y-6">
-      {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-nirvaan-dark">Operations Overview</h2>
-          <p className="text-xs md:text-sm text-nirvaan-outline">
-            Real-time emergency response tracking and analytics.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <AdminLayoutContext.Provider value={true}>
+    <div className="min-h-screen bg-nirvaan-bg flex flex-col md:flex-row">
+      {/* Mobile top navigation */}
+      <header className="sticky top-0 z-20 bg-white border-b border-nirvaan-surface-high px-4 pt-4 pb-3 flex flex-col gap-3 md:hidden">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-extrabold text-nirvaan-primary tracking-tight flex items-center gap-2">
+            <Ambulance className="w-6 h-6" /> Nirvaan
+          </h1>
           <button
-            onClick={handleDownloadReport}
-            className="flex-1 sm:flex-initial px-3.5 py-2 bg-white border border-nirvaan-outline-variant rounded-lg text-xs font-bold text-nirvaan-dark hover:bg-nirvaan-surface flex items-center justify-center gap-1.5 shadow-sm"
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-nirvaan-primary border border-nirvaan-surface-high hover:bg-nirvaan-surface transition-colors"
           >
-            <Download className="w-3.5 h-3.5" /> Download Report
-          </button>
-          <button
-            onClick={() => navigate("/admin/hospitals")}
-            className="flex-1 sm:flex-initial px-3.5 py-2 bg-nirvaan-secondary rounded-lg text-xs font-bold text-white hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Hospital
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
-      </div>
+        <nav className={`flex items-center gap-2 overflow-x-auto whitespace-nowrap ${HIDE_SCROLLBAR}`}>
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 ${
+                isActive(item.href)
+                  ? "bg-nirvaan-secondary text-white"
+                  : "bg-white text-nirvaan-dark border border-nirvaan-surface-high hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-          <p className="text-xs font-semibold text-nirvaan-outline mb-1">Total Trips</p>
-          <p className="text-3xl font-extrabold text-nirvaan-dark">{stats.totalTrips}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-          <p className="text-xs font-semibold text-nirvaan-outline mb-1">Active Drivers</p>
-          <p className="text-3xl font-extrabold text-nirvaan-success">{stats.activeDrivers}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-nirvaan-surface-high shadow-sm">
-          <p className="text-xs font-semibold text-nirvaan-outline mb-1">Avg Response Time</p>
-          <p className="text-3xl font-extrabold text-nirvaan-dark">{stats.avgResponseTime}</p>
-        </div>
-      </div>
+      {/* Desktop sidebar */}
+      <aside className="w-60 bg-white border-r border-nirvaan-surface-high px-4 py-6 hidden md:flex md:flex-col shrink-0 md:sticky md:top-0 md:h-screen">
+        <h1 className="text-2xl font-extrabold text-nirvaan-primary tracking-tight mb-8 flex items-center gap-2">
+          <Ambulance className="w-6 h-6" /> Nirvaan
+        </h1>
+        <nav className="space-y-1 flex-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                isActive(item.href)
+                  ? "bg-nirvaan-secondary text-white"
+                  : "text-nirvaan-dark hover:bg-nirvaan-surface"
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+        <button
+          onClick={handleLogout}
+          className="mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-nirvaan-primary hover:bg-nirvaan-surface transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
+      </aside>
 
-      {/* Recent Trips Table */}
-      <div className="bg-white rounded-xl border border-nirvaan-surface-high p-5 shadow-sm">
-        <h3 className="text-sm font-bold text-nirvaan-dark mb-4">Recent Trips</h3>
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left text-xs min-w-[500px]">
-            <thead>
-              <tr className="border-b border-nirvaan-surface-high text-nirvaan-outline font-semibold">
-                <th className="pb-3 px-2">Patient</th>
-                <th className="pb-3 px-2">Status</th>
-                <th className="pb-3 px-2">Requested</th>
-                <th className="pb-3 px-2">Driver Response Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-nirvaan-surface-high font-medium">
-              {loading && (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-nirvaan-outline">
-                    Loading trip statistics...
-                  </td>
-                </tr>
-              )}
-              {!loading && recentTrips.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-nirvaan-outline">
-                    No recent trips recorded.
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                recentTrips.map((trip, idx) => (
-                  <tr key={trip.id || idx} className="hover:bg-nirvaan-surface">
-                    <td className="py-3 px-2 font-bold text-nirvaan-dark">
-                      {trip.patient || "N/A"}
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-nirvaan-secondary">
-                        {trip.status || "Completed"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-nirvaan-outline">{trip.date || "N/A"}</td>
-                    <td className="py-3 px-2 font-bold text-nirvaan-dark">
-                      {trip.time || "0 min"}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Page content */}
+      <main className="flex-1 min-w-0 p-4 md:p-6 overflow-x-hidden">
+        {children ?? <Outlet />}
+      </main>
     </div>
+    </AdminLayoutContext.Provider>
   );
 }

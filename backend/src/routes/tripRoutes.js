@@ -4,6 +4,7 @@ const { verifyToken, requireRole } = require("../middleware/authMiddleware");
 const {
   requestTrip,
   acceptTrip,
+  markArrived,
   completeTrip,
   getMyTrips,
   submitPriceFeedback,
@@ -21,6 +22,7 @@ router.get("/admin/stats", verifyToken, requireRole("admin"), getAdminStats);
 router.get("/payments/mine", verifyToken, getPaymentHistory);
 router.get("/:tripId", verifyToken, getTripDetails);
 router.patch("/:tripId/accept", verifyToken, requireRole("driver"), acceptTrip);
+router.patch("/:tripId/arrived", verifyToken, requireRole("driver"), markArrived);
 router.patch("/:tripId/complete", verifyToken, completeTrip);
 router.post("/:tripId/price", verifyToken, submitPriceFeedback);
 router.get("/earnings/mine", verifyToken, requireRole("driver"), getDriverEarnings);

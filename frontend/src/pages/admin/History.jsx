@@ -16,48 +16,6 @@ export default function History() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const mockHistory = [
-    {
-      id: "REQ-9041",
-      patient_name: "Rahul Sharma",
-      contact: "+91 98230 11223",
-      pickup_address: "Kothrud, Pune",
-      hospital_name: "Sassoon Hospital",
-      ambulance_code: "AMB-102",
-      status: "completed",
-      created_at: "2026-09-28T14:30:00Z",
-    },
-    {
-      id: "REQ-9040",
-      patient_name: "Ananya Deshmukh",
-      contact: "+91 91580 44321",
-      pickup_address: "Viman Nagar, Pune",
-      hospital_name: "Sahyadri Hospital",
-      ambulance_code: "AMB-105",
-      status: "completed",
-      created_at: "2026-09-28T12:15:00Z",
-    },
-    {
-      id: "REQ-9039",
-      patient_name: "Suresh Patil",
-      contact: "+91 97654 88990",
-      pickup_address: "Hadapsar, Pune",
-      hospital_name: "Noble Hospital",
-      ambulance_code: "AMB-101",
-      status: "cancelled",
-      created_at: "2026-09-28T10:05:00Z",
-    },
-    {
-      id: "REQ-9038",
-      patient_name: "Priya Kulkarni",
-      contact: "+91 94220 55667",
-      pickup_address: "Shivajinagar, Pune",
-      hospital_name: "Ruby Hall Clinic",
-      ambulance_code: "AMB-108",
-      status: "completed",
-      created_at: "2026-09-27T18:45:00Z",
-    },
-  ];
 
   useEffect(() => {
     fetchHistory();
@@ -67,10 +25,10 @@ export default function History() {
     setLoading(true);
     try {
       const { data } = await api.get("/admin/history");
-      setHistory(data.length > 0 ? data : mockHistory);
+      setHistory(data || []);
     } catch (err) {
-      console.log("Using fallback history data:", err);
-      setHistory(mockHistory);
+      console.error("Failed to load history:", err);
+      setHistory([]);
     } finally {
       setLoading(false);
     }

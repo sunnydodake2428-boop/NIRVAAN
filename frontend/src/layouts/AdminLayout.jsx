@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { logout } from "../utils/auth";
 import {
   Ambulance,
   LayoutDashboard,
@@ -37,15 +38,10 @@ const AdminLayoutContext = createContext(false);
 export default function AdminLayout({ children }) {
   const nested = useContext(AdminLayoutContext);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
 
   if (nested) return children ?? <Outlet />;
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    navigate("/login", { replace: true });
-  };
+  const handleLogout = () => logout();
 
   const isActive = (href) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);

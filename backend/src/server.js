@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const ratingRoutes = require("./routes/ratingRoutes");
 
 const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const tripRoutes = require("./routes/tripRoutes");
 const hospitalRoutes = require("./routes/hospitalRoutes");
 const driverRoutes = require("./routes/driverRoutes");
@@ -18,10 +19,12 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "*")
 
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors({ origin: allowedOrigins }));
 app.options("*", cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use("/api/ratings", ratingRoutes);
+app.use("/api/admin", adminRoutes);
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);

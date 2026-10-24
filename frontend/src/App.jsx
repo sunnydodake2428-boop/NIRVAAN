@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import { ActiveTripProvider } from "./context/ActiveTripContext";
 import ActiveTripBar from "./components/ActiveTripBar";
-
+import { getSession, isLoggedIn, homeForRole } from "./utils/auth";
 
 // Patient
 import EmergencyContacts from "./pages/patient/EmergencyContacts";
@@ -38,11 +38,18 @@ import Analytics from "./pages/admin/Analytics";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 
+// Must be logged in (and have the right panel). Otherwise: not logged in -> login,
+// wrong panel -> send them to their OWN panel instead of the login screen.
 function ProtectedRoute({ children, allowedRole }) {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
-  if (!token) return <Navigate to="/login" />;
-  if (allowedRole && role !== allowedRole) return <Navigate to="/login" />;
+  if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  const { role } = getSession();
+  if (allowedRole && role !== allowedRole) return <Navigate to={homeForRole(role)} replace />;
+  return children;
+}
+
+// Login page is only for logged-out visitors. Anyone already logged in goes straight to their panel.
+function PublicOnly({ children }) {
+  if (isLoggedIn()) return <Navigate to={homeForRole(getSession().role)} replace />;
   return children;
 }
 
@@ -52,7 +59,8 @@ function App() {
       <ActiveTripProvider>
         <ActiveTripBar />
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
 
           {/* Patient routes */}
           <Route path="/patient" element={<ProtectedRoute allowedRole="caller"><PatientHome /></ProtectedRoute>} />
@@ -96,8 +104,8 @@ function App() {
             <Route path="reports" element={<Reports />} />
           </Route>
 
-          {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/login" />} />
+          {/* Anything else: logged-in users land on their own panel, others on login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </ActiveTripProvider>
     </BrowserRouter>

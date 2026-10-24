@@ -103,6 +103,31 @@ async function acceptTrip(req, res) {
   }
 }
 
+// Driver taps "Arrived at pickup" - this is what makes a real arrival/response time possible
+async function markArrived(req, res) {
+  try {
+    const tripId = toId(req.params.tripId);
+    if (!tripId) return res.status(400).json({ error: "Invalid trip id" });
+
+    const result = await pool.query(
+      `UPDATE trips SET arrived_at = NOW()
+       WHERE id = $1
+         AND status::text = 'accepted'
+         AND arrived_at IS NULL
+         AND driver_id = (SELECT id FROM drivers WHERE user_id = $2)
+       RETURNING *`,
+      [tripId, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(409).json({ error: "Trip not found, not yours, or arrival already recorded" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to record arrival" });
+  }
+}
+
 // Mark trip completed (only the patient who requested it, the assigned driver, or an admin)
 async function completeTrip(req, res) {
   try {
@@ -347,10 +372,22 @@ async function getDriverEarnings(req, res) {
       [driverId]
     );
 
+    // This driver's OWN response times (not the fleet average)
+    const own = await pool.query(
+      `SELECT AVG(EXTRACT(EPOCH FROM (accepted_at - requested_at)) / 60) AS avg_accept,
+              AVG(EXTRACT(EPOCH FROM (arrived_at - accepted_at)) / 60)
+                FILTER (WHERE arrived_at IS NOT NULL) AS avg_arrival
+       FROM trips WHERE driver_id = $1 AND accepted_at IS NOT NULL`,
+      [driverId]
+    );
+    const r1 = (v) => (v == null ? null : Math.round(Number(v) * 10) / 10);
+
     res.json({
       total_earnings: parseFloat(totals.rows[0].total_earnings),
       completed_rides: parseInt(totals.rows[0].completed_rides),
       today_earnings: parseFloat(today.rows[0].today_earnings),
+      avg_accept_minutes: r1(own.rows[0].avg_accept),
+      avg_arrival_minutes: r1(own.rows[0].avg_arrival),
     });
   } catch (err) {
     console.error(err);
@@ -361,6 +398,7 @@ async function getDriverEarnings(req, res) {
 module.exports = {
   requestTrip,
   acceptTrip,
+  markArrived,
   completeTrip,
   getMyTrips,
   submitPriceFeedback,
