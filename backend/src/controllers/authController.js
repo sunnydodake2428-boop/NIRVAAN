@@ -8,6 +8,24 @@ const GOOGLE_CLIENT_ID =
   "1067477128562-hvge14a7q78to4n3l7pksi1cuvv70rnr.apps.googleusercontent.com";
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+// Sessions last 30 days.
+const TOKEN_LIFETIME = "30d";
+
+function signToken(user) {
+  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: TOKEN_LIFETIME,
+  });
+}
+
+// Only patients ("caller") and drivers can self-register. Nobody can make themselves admin.
+// Returns the role to store, or null if the requested role is not allowed.
+function cleanRole(role) {
+  if (role === undefined || role === null || role === "") return "caller";
+  if (role === "patient" || role === "caller") return "caller";
+  if (role === "driver") return "driver";
+  return null;
+}
+
 async function signup(req, res) {
   try {
     const { name, phone, password, role } = req.body;
@@ -15,17 +33,21 @@ async function signup(req, res) {
       return res.status(400).json({ error: "name, phone, and password are required" });
     }
 
+    const safeRole = cleanRole(role);
+    if (!safeRole) {
+      return res.status(400).json({ error: "Role must be patient or driver" });
+    }
+
     const existing = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: "Phone number already registered" });
     }
 
-    // Hash password with optimal work factor for fast execution
     const password_hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users (name, phone, password_hash, role)
        VALUES ($1, $2, $3, $4) RETURNING id, name, phone, role, avatar_url`,
-      [name, phone, password_hash, role || "caller"]
+      [name, phone, password_hash, safeRole]
     );
 
     const user = result.rows[0];
@@ -38,11 +60,7 @@ async function signup(req, res) {
       );
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res.status(201).json({ user, token });
+    res.status(201).json({ user, token: signToken(user) });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ error: "Signup failed" });
@@ -58,7 +76,6 @@ async function login(req, res) {
       return res.status(400).json({ error: "Phone or email and password are required" });
     }
 
-    // Optimized select: limit columns and fetch indexed row
     const result = await pool.query(
       "SELECT id, name, phone, password_hash, role, avatar_url FROM users WHERE phone = $1",
       [identifier]
@@ -74,10 +91,6 @@ async function login(req, res) {
       return res.status(401).json({ error: "Invalid phone/email or password" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
     res.json({
       user: {
         id: user.id,
@@ -86,7 +99,7 @@ async function login(req, res) {
         role: user.role,
         avatar_url: user.avatar_url || null,
       },
-      token,
+      token: signToken(user),
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -127,7 +140,6 @@ async function getProfile(req, res) {
   }
 }
 
-// Fast Google Login execution
 async function googleLogin(req, res) {
   try {
     const { credential, role } = req.body;
@@ -148,24 +160,24 @@ async function googleLogin(req, res) {
     );
     let user = userResult.rows[0];
 
-    // Fast non-blocking dummy string generation for OAuth users
+    // New Google users: the role is only used when creating the account, and admin is never allowed.
     if (!user) {
+      const safeRole = cleanRole(role);
+      if (!safeRole) {
+        return res.status(400).json({ error: "Role must be patient or driver" });
+      }
       const dummyPassword = "GOOGLE_AUTH_" + Math.random().toString(36).substring(2);
       const insertResult = await pool.query(
         `INSERT INTO users (name, phone, password_hash, role, avatar_url)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, name, phone, role, avatar_url`,
-        [name, email, dummyPassword, role || "caller", picture]
+        [name, email, dummyPassword, safeRole, picture]
       );
       user = insertResult.rows[0];
       if (user.role === "driver") {
         await pool.query("INSERT INTO drivers (user_id) VALUES ($1)", [user.id]);
       }
     }
-
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
 
     res.json({
       user: {
@@ -175,11 +187,11 @@ async function googleLogin(req, res) {
         role: user.role,
         avatar_url: user.avatar_url || picture || null,
       },
-      token,
+      token: signToken(user),
     });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ error: "Google login failed: " + err.message });
+    res.status(500).json({ error: "Google login failed" });
   }
 }
 
@@ -207,4 +219,3 @@ module.exports = {
   googleLogin,
   getAllUsers,
 };
-
