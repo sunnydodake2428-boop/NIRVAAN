@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { logout } from "../utils/auth";
+import { logout } from "../../utils/auth";
 import {
   Ambulance,
   LayoutDashboard,
